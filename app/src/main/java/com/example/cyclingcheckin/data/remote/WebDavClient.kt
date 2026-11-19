@@ -176,7 +176,9 @@ class WebDavClient(
 
     private fun parseList(xml: String, config: WebDavConfig): List<RemoteBackupFile> {
         if (xml.isBlank()) return emptyList()
-        val parser = XmlPullParserFactory.newInstance().newPullParser()
+        val factory = XmlPullParserFactory.newInstance()
+        factory.isNamespaceAware = true
+        val parser = factory.newPullParser()
         parser.setInput(StringReader(xml))
         val result = mutableListOf<RemoteBackupFile>()
         var event = parser.eventType
@@ -186,45 +188,62 @@ class WebDavClient(
         var collection = false
         while (event != XmlPullParser.END_DOCUMENT) {
             when (event) {
-                XmlPullParser.START_TAG -> when (parser.name.lowercase()) {
-                    "response" -> {
-                        href = null
-                        size = 0L
-                        modified = 0L
-                        collection = false
-                    }
-                    "href" -> href = parser.nextText().trim()
-                    "getcontentlength" -> size = parser.nextText().trim().toLongOrNull() ?: 0L
-                    "getlastmodified" -> modified = parseHttpDate(parser.nextText().trim())
-                    "collection" -> collection = true
-                }
-                XmlPullParser.END_TAG -> if (parser.name.equals("response", ignoreCase = true)) {
-                    val currentHref = href
-                    if (!collection && currentHref != null) {
-                        val rawName = currentHref.substringBefore('?')
-                            .trimEnd('/')
-                            .substringAfterLast('/')
-                        val name = runCatching {
-                            URLDecoder.decode(rawName, "UTF-8")
-                        }.getOrDefault(rawName)
-                        if (name.startsWith(BACKUP_PREFIX) && name.endsWith(".json")) {
-                            result.add(
-                                RemoteBackupFile(
-                                    name = name,
-                                    href = currentHref,
-                                    sizeBytes = size,
-                                    lastModified = modified
-                                )
-                            )
+                XmlPullParser.START_TAG -> {
+                    val name = parser.name.localize()
+                    when (name) {
+                        "response" -> {
+                            href = null
+                            size = 0L
+                            modified = 0L
+                            collection = false
+                        }
+                        "href" -> href = parser.nextText().trim()
+                        "getcontentlength" -> size = parser.nextText().trim().toLongOrNull() ?: 0L
+                        "getlastmodified" -> modified = parseHttpDate(parser.nextText().trim())
+                        "resourcetype" -> {
+                            // 进入子元素查找 <collection/>
+                            var inner = parser.next()
+                            while (inner != XmlPullParser.END_TAG || parser.name.localize() != "resourcetype") {
+                                if (inner == XmlPullParser.START_TAG && parser.name.localize() == "collection") {
+                                    collection = true
+                                }
+                                inner = parser.next()
+                            }
                         }
                     }
-                    href = null
+                }
+                XmlPullParser.END_TAG -> {
+                    if (parser.name.localize() == "response") {
+                        val currentHref = href
+                        if (!collection && currentHref != null) {
+                            val rawName = currentHref.substringBefore('?')
+                                .trimEnd('/')
+                                .substringAfterLast('/')
+                            val name = runCatching {
+                                URLDecoder.decode(rawName, "UTF-8")
+                            }.getOrDefault(rawName)
+                            if (name.startsWith(BACKUP_PREFIX) && name.endsWith(".json")) {
+                                result.add(
+                                    RemoteBackupFile(
+                                        name = name,
+                                        href = currentHref,
+                                        sizeBytes = size,
+                                        lastModified = modified
+                                    )
+                                )
+                            }
+                        }
+                        href = null
+                    }
                 }
             }
             event = parser.next()
         }
         return result.sortedByDescending { it.lastModified }
     }
+
+    /** 去掉可能存在的 XML 命名空间前缀（如 d:href → href）。 */
+    private fun String.localize(): String = substringAfter(':')
 
     private fun parseHttpDate(value: String): Long = runCatching {
         ZonedDateTime.parse(value, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant().toEpochMilli()

@@ -1,6 +1,8 @@
 package com.example.cyclingcheckin.navigation
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -26,6 +28,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.cyclingcheckin.AppContainer
 import com.example.cyclingcheckin.R
 import com.example.cyclingcheckin.ui.home.HomeScreen
+import com.example.cyclingcheckin.ui.settings.BackupRestoreScreen
 import com.example.cyclingcheckin.ui.settings.SettingsScreen
 import com.example.cyclingcheckin.ui.settings.WebDavConfigScreen
 import com.example.cyclingcheckin.ui.stats.StatsScreen
@@ -36,7 +39,7 @@ fun RideLogApp(container: AppContainer) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val snackbarHostState = remember { SnackbarHostState() }
-    val showBottomBar = currentRoute == Routes.HOME || currentRoute == Routes.STATS
+    val showBottomBar = currentRoute == Routes.HOME || currentRoute == Routes.STATS || currentRoute == Routes.SETTINGS
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -76,8 +79,7 @@ fun RideLogApp(container: AppContainer) {
             composable(Routes.HOME) {
                 HomeScreen(
                     container = container,
-                    snackbarHostState = snackbarHostState,
-                    onOpenSettings = { navController.navigate(Routes.SETTINGS) }
+                    snackbarHostState = snackbarHostState
                 )
             }
             composable(Routes.STATS) {
@@ -96,7 +98,8 @@ fun RideLogApp(container: AppContainer) {
                     container = container,
                     snackbarHostState = snackbarHostState,
                     onBack = { navController.popBackStack() },
-                    onOpenWebDav = { navController.navigate(Routes.WEBDAV) }
+                    onOpenWebDav = { navController.navigate(Routes.WEBDAV) },
+                    onOpenBackupRestore = { navController.navigate(Routes.BACKUP_RESTORE) }
                 )
             }
             composable(Routes.WEBDAV) {
@@ -104,6 +107,14 @@ fun RideLogApp(container: AppContainer) {
                     container = container,
                     snackbarHostState = snackbarHostState,
                     onBack = { navController.popBackStack() }
+                )
+            }
+            composable(Routes.BACKUP_RESTORE) {
+                BackupRestoreScreen(
+                    container = container,
+                    snackbarHostState = snackbarHostState,
+                    onBack = { navController.popBackStack() },
+                    onOpenWebDav = { navController.navigate(Routes.WEBDAV) }
                 )
             }
         }
@@ -129,13 +140,7 @@ private fun RideLogBottomBar(
                 )
             },
             label = { Text(stringResource(R.string.nav_check_in)) },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = MaterialTheme.colorScheme.primary,
-                selectedTextColor = MaterialTheme.colorScheme.primary,
-                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            colors = navBarItemColors()
         )
         NavigationBarItem(
             selected = currentRoute == Routes.STATS,
@@ -147,13 +152,28 @@ private fun RideLogBottomBar(
                 )
             },
             label = { Text(stringResource(R.string.nav_stats)) },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = MaterialTheme.colorScheme.primary,
-                selectedTextColor = MaterialTheme.colorScheme.primary,
-                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            colors = navBarItemColors()
+        )
+        NavigationBarItem(
+            selected = currentRoute == Routes.SETTINGS,
+            onClick = { onNavigate(Routes.SETTINGS) },
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = stringResource(R.string.nav_settings)
+                )
+            },
+            label = { Text(stringResource(R.string.nav_settings)) },
+            colors = navBarItemColors()
         )
     }
 }
+
+@Composable
+private fun navBarItemColors() = NavigationBarItemDefaults.colors(
+    selectedIconColor = MaterialTheme.colorScheme.primary,
+    selectedTextColor = MaterialTheme.colorScheme.primary,
+    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+)

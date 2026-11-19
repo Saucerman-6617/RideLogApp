@@ -5,6 +5,7 @@
     <!-- 底部导航 -->
     <string name="nav_check_in">打卡</string>
     <string name="nav_stats">统计</string>
+    <string name="nav_settings">设置</string>
 
     <!-- 通用操作 -->
     <string name="action_add_record">记录</string>
@@ -21,6 +22,10 @@
     <string name="action_configure">去配置</string>
     <string name="action_open">查看</string>
     <string name="loading">加载中…</string>
+    <string name="action_restore">恢复</string>
+    <string name="action_browse">浏览</string>
+    <string name="action_refresh">刷新</string>
+    <string name="action_backup">立即备份</string>
 
     <!-- 主页 -->
     <string name="home_records_today">今日记录</string>
@@ -112,16 +117,14 @@
     <string name="settings_section_about">关于</string>
     <string name="settings_webdav">坚果云 WebDAV</string>
     <string name="settings_webdav_sub">服务器与账号配置</string>
-    <string name="settings_backup">备份到坚果云</string>
-    <string name="settings_backup_sub">全量上传，成功后标记为已备份</string>
-    <string name="settings_restore">从坚果云恢复</string>
-    <string name="settings_restore_sub">选择远端备份文件并合并或覆盖</string>
+    <string name="settings_backup_restore">备份与恢复</string>
+    <string name="settings_backup_restore_sub">立即备份，或浏览远端文件恢复</string>
     <string name="settings_export">导出到本地文件</string>
     <string name="settings_export_sub">支持 JSON 与 CSV</string>
     <string name="settings_import">导入本地文件</string>
     <string name="settings_import_sub">从 JSON 备份恢复，支持合并或覆盖</string>
     <string name="settings_clear">清空全部数据</string>
-    <string name="settings_clear_sub">需输入“删除”确认，操作不可恢复</string>
+    <string name="settings_clear_sub">需输入"删除"确认，操作不可恢复</string>
     <string name="settings_theme">主题</string>
     <string name="settings_theme_system">跟随系统</string>
     <string name="settings_theme_light">浅色</string>
@@ -148,8 +151,8 @@
     <string name="settings_export_json">导出 JSON</string>
     <string name="settings_export_csv">导出 CSV</string>
     <string name="settings_clear_title">清空全部数据？</string>
-    <string name="settings_clear_message">此操作不可恢复。请输入“删除”以确认。</string>
-    <string name="settings_clear_hint">输入“删除”</string>
+    <string name="settings_clear_message">此操作不可恢复。请输入"删除"以确认。</string>
+    <string name="settings_clear_hint">输入"删除"</string>
     <string name="settings_clear_word">删除</string>
     <string name="settings_clear_confirm">确认清空</string>
     <string name="settings_import_title">选择导入方式</string>
@@ -159,8 +162,16 @@
     <string name="settings_busy">正在处理…</string>
     <string name="settings_busy_backup">正在备份…</string>
     <string name="settings_busy_restore">正在恢复…</string>
+    <string name="settings_backup_restore_title">备份与恢复</string>
+    <string name="settings_backup_restore_hint">点击下方按钮立即备份，或浏览远端目录选择备份文件恢复</string>
+    <string name="settings_auto_backup_title">自动备份</string>
+    <string name="settings_auto_backup_sub">新增骑行记录后自动备份一次到坚果云</string>
+    <string name="settings_backup_files">备份文件</string>
+    <string name="settings_restore_confirm_title">恢复数据</string>
+    <string name="settings_restore_confirm_body">是否从该文件恢复数据？</string>
     <string name="settings_restore_title">选择备份文件</string>
-    <string name="settings_restore_empty">暂无备份</string>
+    <string name="settings_restore_empty_title">远端目录还没有备份文件</string>
+    <string name="settings_restore_empty_sub">点击刷新重新尝试，或先去备份一次</string>
     <string name="settings_file_meta">%1$s · %2$s 条 · %3$s</string>
     <string name="settings_file_no_count">%1$s · 条数未知 · %2$s</string>
     <string name="settings_exported">已导出 %1$d 条记录</string>
@@ -174,7 +185,7 @@
 
     <!-- WebDAV -->
     <string name="webdav_title">坚果云 WebDAV</string>
-    <string name="webdav_hint">坚果云需在账户安全中开启 WebDAV，并生成“应用密码”。请勿填写登录密码。</string>
+    <string name="webdav_hint">坚果云需在账户安全中开启 WebDAV，并生成"应用密码"。请勿填写登录密码。</string>
     <string name="webdav_server">服务器地址</string>
     <string name="webdav_account">账号（邮箱）</string>
     <string name="webdav_password">应用密码</string>

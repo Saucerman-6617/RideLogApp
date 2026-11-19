@@ -3,6 +3,7 @@ package com.example.cyclingcheckin.data.prefs
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -27,6 +28,7 @@ class SettingsStore(context: Context) {
             calendarMarkStyle = runCatching {
                 CalendarMarkStyle.valueOf(prefs[KEY_MARK_STYLE] ?: CalendarMarkStyle.DOT.name)
             }.getOrDefault(CalendarMarkStyle.DOT),
+            autoBackupAfterRecord = prefs[KEY_AUTO_BACKUP_AFTER_RECORD] ?: true,
             lastBackupAt = prefs[KEY_LAST_BACKUP_AT],
             webDavServer = prefs[KEY_WEBDAV_SERVER] ?: AppSettings.DEFAULT_WEBDAV_SERVER,
             webDavAccount = prefs[KEY_WEBDAV_ACCOUNT].orEmpty(),
@@ -40,6 +42,10 @@ class SettingsStore(context: Context) {
 
     suspend fun setCalendarMarkStyle(style: CalendarMarkStyle) {
         dataStore.edit { it[KEY_MARK_STYLE] = style.name }
+    }
+
+    suspend fun setAutoBackupAfterRecord(enabled: Boolean) {
+        dataStore.edit { it[KEY_AUTO_BACKUP_AFTER_RECORD] = enabled }
     }
 
     suspend fun setLastBackupAt(timestamp: Long) {
@@ -67,6 +73,7 @@ class SettingsStore(context: Context) {
     private companion object {
         val KEY_THEME = stringPreferencesKey("theme_mode")
         val KEY_MARK_STYLE = stringPreferencesKey("calendar_mark_style")
+        val KEY_AUTO_BACKUP_AFTER_RECORD = booleanPreferencesKey("auto_backup_after_record")
         val KEY_LAST_BACKUP_AT = longPreferencesKey("last_backup_at")
         val KEY_WEBDAV_SERVER = stringPreferencesKey("webdav_server")
         val KEY_WEBDAV_ACCOUNT = stringPreferencesKey("webdav_account")

@@ -74,12 +74,14 @@ import java.time.ZoneOffset
 @Composable
 fun RecordEditSheet(
     existing: Record?,
+    preselectedDate: LocalDate? = null,
     onDismiss: () -> Unit,
     onSave: (date: LocalDate, time: LocalTime, distance: Double, note: String) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var dateEpochDay by rememberSaveable(existing?.id) {
-        mutableLongStateOf((existing?.date ?: LocalDate.now()).toEpochDay())
+        val initial = existing?.date ?: preselectedDate ?: LocalDate.now()
+        mutableLongStateOf(initial.toEpochDay())
     }
     var hour by rememberSaveable(existing?.id) {
         mutableIntStateOf(existing?.time?.hour ?: LocalTime.now().hour)

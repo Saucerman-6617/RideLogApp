@@ -18,12 +18,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
@@ -63,8 +61,7 @@ import java.time.LocalDate
 @Composable
 fun HomeScreen(
     container: AppContainer,
-    snackbarHostState: SnackbarHostState,
-    onOpenSettings: () -> Unit
+    snackbarHostState: SnackbarHostState
 ) {
     val viewModel: HomeViewModel = viewModel(factory = HomeViewModel.factory(container))
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -113,7 +110,7 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            HomeHeader(onOpenSettings = onOpenSettings)
+            HomeHeader()
         }
         item {
             CalendarPanel(
@@ -214,6 +211,7 @@ fun HomeScreen(
     if (showSheet) {
         RecordEditSheet(
             existing = editingRecord,
+            preselectedDate = uiState.selectedDate,
             onDismiss = { showSheet = false },
             onSave = { date, time, distance, note ->
                 viewModel.saveRecord(editingRecord, date, time, distance, note)
@@ -259,7 +257,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeHeader(onOpenSettings: () -> Unit) {
+private fun HomeHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -286,14 +284,6 @@ private fun HomeHeader(onOpenSettings: () -> Unit) {
                 text = "${TimeUtils.fullDateLabel(LocalDate.now())} ${TimeUtils.weekdayLong(LocalDate.now())}",
                 style = MaterialTheme.typography.bodySmall,
                 color = RideLogTheme.colors.secondaryText
-            )
-        }
-        Spacer(modifier = Modifier.weight(1f))
-        IconButton(onClick = onOpenSettings) {
-            Icon(
-                imageVector = Icons.Filled.Settings,
-                contentDescription = stringResource(R.string.cd_open_settings),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

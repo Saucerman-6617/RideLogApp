@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.cyclingcheckin.AppContainer
 import com.example.cyclingcheckin.data.prefs.SettingsStore
+import com.example.cyclingcheckin.data.remote.BackupService
 import com.example.cyclingcheckin.data.repo.RecordRepository
 import com.example.cyclingcheckin.domain.model.CalendarMarkStyle
 import com.example.cyclingcheckin.domain.model.DayStat
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -51,7 +53,8 @@ sealed interface HomeEvent {
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
     private val repository: RecordRepository,
-    settingsStore: SettingsStore
+    private val settingsStore: SettingsStore,
+    private val backupService: BackupService
 ) : ViewModel() {
 
     private val selectedDate = MutableStateFlow(LocalDate.now())
@@ -123,7 +126,10 @@ class HomeViewModel(
         viewModelScope.launch {
             if (existing == null) {
                 repository.create(date, time, distance, note)
-                    .onSuccess { events.send(HomeEvent.Added(it)) }
+                    .onSuccess {
+                        events.send(HomeEvent.Added(it))
+                        triggerAutoBackup()
+                    }
                     .onFailure { events.send(HomeEvent.Failed("保存失败，请重试")) }
             } else {
                 val updated = existing.copy(
@@ -135,6 +141,20 @@ class HomeViewModel(
                 repository.update(updated)
                     .onSuccess { events.send(HomeEvent.Updated(updated)) }
                     .onFailure { events.send(HomeEvent.Failed("保存失败，请重试")) }
+            }
+        }
+    }
+
+    /** 自动备份：新增记录后，如果开启了自动备份且已配置 WebDAV，则后台触发一次全量备份。 */
+    private fun triggerAutoBackup() {
+        viewModelScope.launch {
+            try {
+                val settings = settingsStore.settings.first()
+                if (!settings.autoBackupAfterRecord) return@launch
+                if (!settings.webDavConfigured) return@launch
+                backupService.backup()
+            } catch (_: Exception) {
+                // 自动备份静默失败，不打扰用户
             }
         }
     }
@@ -164,7 +184,11 @@ class HomeViewModel(
     companion object {
         fun factory(container: AppContainer) = viewModelFactory {
             initializer {
-                HomeViewModel(container.recordRepository, container.settingsStore)
+                HomeViewModel(
+                    container.recordRepository,
+                    container.settingsStore,
+                    container.backupService
+                )
             }
         }
     }

@@ -17,6 +17,7 @@ enum class CalendarMarkStyle {
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val calendarMarkStyle: CalendarMarkStyle = CalendarMarkStyle.DOT,
+    val autoBackupAfterRecord: Boolean = true,
     val lastBackupAt: Long? = null,
     val webDavServer: String = DEFAULT_WEBDAV_SERVER,
     val webDavAccount: String = "",

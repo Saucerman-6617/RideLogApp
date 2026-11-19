@@ -158,12 +158,9 @@ class SettingsViewModel(
         viewModelScope.launch {
             busy.value = true
             backupService.listBackups()
-                .onSuccess {
-                    if (it.isEmpty()) {
-                        events.send(SettingsEvent.Message("远端目录还没有备份文件"))
-                    } else {
-                        events.send(SettingsEvent.RemoteBackupsLoaded(it))
-                    }
+                .onSuccess { files ->
+                    // 即使列表为空也发事件，让 UI 展示空态对话框
+                    events.send(SettingsEvent.RemoteBackupsLoaded(files))
                 }
                 .onFailure { events.send(it.toEvent()) }
             busy.value = false

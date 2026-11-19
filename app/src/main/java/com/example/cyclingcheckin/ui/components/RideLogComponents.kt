@@ -140,7 +140,15 @@ fun EmptyState(
     title: String,
     hint: String,
     modifier: Modifier = Modifier,
-    action: @Composable (() -> Unit)? = null
+    action: @Composable (() -> Unit)? = null,
+    illustration: @Composable () -> Unit = {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_notebook),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
+            modifier = Modifier.size(96.dp)
+        )
+    }
 ) {
     Column(
         modifier = modifier
@@ -149,7 +157,7 @@ fun EmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        EmptyRideIllustration()
+        illustration()
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,

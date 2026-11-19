@@ -5,4 +5,5 @@ object Routes {
     const val STATS = "stats"
     const val SETTINGS = "settings"
     const val WEBDAV = "webdav"
+    const val BACKUP_RESTORE = "backup_restore"
 }

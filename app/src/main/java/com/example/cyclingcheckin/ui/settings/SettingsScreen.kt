@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -56,6 +57,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -81,7 +83,8 @@ fun SettingsScreen(
     container: AppContainer,
     snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
-    onOpenWebDav: () -> Unit
+    onOpenWebDav: () -> Unit,
+    onOpenBackupRestore: () -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: SettingsViewModel =
@@ -95,10 +98,6 @@ fun SettingsScreen(
     var clearInput by remember { mutableStateOf("") }
     var showPrivacyDialog by remember { mutableStateOf(false) }
     var showLicenseDialog by remember { mutableStateOf(false) }
-    var remoteFiles by remember { mutableStateOf<List<RemoteBackupFile>>(emptyList()) }
-    var showRestoreList by remember { mutableStateOf(false) }
-    var selectedFileForRestore by remember { mutableStateOf<RemoteBackupFile?>(null) }
-    var showRestorePolicy by remember { mutableStateOf(false) }
     var pendingImport by remember { mutableStateOf<List<Record>>(emptyList()) }
     var showImportPolicy by remember { mutableStateOf(false) }
 
@@ -119,10 +118,6 @@ fun SettingsScreen(
                 is SettingsEvent.BackupDone -> snackbarHostState.showSnackbar(
                     context.getString(R.string.settings_backup_done, event.count)
                 )
-                is SettingsEvent.RemoteBackupsLoaded -> {
-                    remoteFiles = event.files
-                    showRestoreList = true
-                }
                 is SettingsEvent.ImportFileLoaded -> {
                     pendingImport = event.records
                     showImportPolicy = true
@@ -143,6 +138,7 @@ fun SettingsScreen(
                     )
                     if (result == SnackbarResult.ActionPerformed) onOpenWebDav()
                 }
+                is SettingsEvent.RemoteBackupsLoaded -> { /* now handled by BackupRestoreScreen */ }
             }
         }
     }
@@ -170,19 +166,15 @@ fun SettingsScreen(
             item {
                 SettingRow(
                     icon = { Icon(Icons.Filled.Place, null, tint = MaterialTheme.colorScheme.primary) },
-                    title = stringResource(R.string.settings_backup),
-                    subtitle = uiState.settings.lastBackupAt?.let {
-                        stringResource(R.string.settings_last_backup, TimeUtils.formatTimestamp(it))
-                    } ?: stringResource(R.string.settings_never_backup),
-                    onClick = viewModel::backupNow
-                )
-            }
-            item {
-                SettingRow(
-                    icon = { Icon(Icons.Filled.DateRange, null, tint = MaterialTheme.colorScheme.primary) },
-                    title = stringResource(R.string.settings_restore),
-                    subtitle = stringResource(R.string.settings_restore_sub),
-                    onClick = viewModel::loadRemoteBackups
+                    title = stringResource(R.string.settings_backup_restore),
+                    subtitle = if (uiState.settings.webDavConfigured) {
+                        uiState.settings.lastBackupAt?.let {
+                            stringResource(R.string.settings_last_backup, TimeUtils.formatTimestamp(it))
+                        } ?: stringResource(R.string.settings_never_backup)
+                    } else {
+                        stringResource(R.string.settings_not_configured)
+                    },
+                    onClick = onOpenBackupRestore
                 )
             }
             item {
@@ -484,93 +476,6 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(onClick = { showLicenseDialog = false }) {
                     Text(stringResource(R.string.action_confirm))
-                }
-            }
-        )
-    }
-
-    if (showRestoreList) {
-        AlertDialog(
-            onDismissRequest = { showRestoreList = false },
-            title = { Text(stringResource(R.string.settings_restore_title)) },
-            text = {
-                LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
-                    items(items = remoteFiles, key = { it.name }) { file ->
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    selectedFileForRestore = file
-                                    showRestoreList = false
-                                    showRestorePolicy = true
-                                }
-                                .padding(vertical = 8.dp)
-                        ) {
-                            Text(
-                                text = file.name,
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = fileMeta(file),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = RideLogTheme.colors.secondaryText
-                            )
-                        }
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showRestoreList = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            }
-        )
-    }
-
-    if (showRestorePolicy) {
-        val file = selectedFileForRestore
-        AlertDialog(
-            onDismissRequest = {
-                showRestorePolicy = false
-                selectedFileForRestore = null
-            },
-            title = { Text(stringResource(R.string.settings_import_title)) },
-            text = {
-                Text(
-                    stringResource(R.string.settings_import_message, file?.recordCount ?: 0) +
-                        "\n\n" + stringResource(R.string.settings_merge) + " / " +
-                        stringResource(R.string.settings_overwrite)
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        file?.let { viewModel.restore(it, ConflictPolicy.MERGE) }
-                        showRestorePolicy = false
-                        selectedFileForRestore = null
-                    }
-                ) { Text(stringResource(R.string.settings_merge)) }
-            },
-            dismissButton = {
-                Row {
-                    TextButton(
-                        onClick = {
-                            showRestorePolicy = false
-                            selectedFileForRestore = null
-                        }
-                    ) { Text(stringResource(R.string.action_cancel)) }
-                    TextButton(
-                        onClick = {
-                            file?.let { viewModel.restore(it, ConflictPolicy.OVERWRITE) }
-                            showRestorePolicy = false
-                            selectedFileForRestore = null
-                        }
-                    ) { Text(stringResource(R.string.settings_overwrite)) }
                 }
             }
         )
