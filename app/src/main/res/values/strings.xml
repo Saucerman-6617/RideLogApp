@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">骑行打卡</string>
+
+    <!-- 底部导航 -->
+    <string name="nav_check_in">打卡</string>
+    <string name="nav_stats">统计</string>
+
+    <!-- 通用操作 -->
+    <string name="action_add_record">记录</string>
+    <string name="action_save">保存</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_delete">删除</string>
+    <string name="action_undo">撤销</string>
+    <string name="action_back">返回</string>
+    <string name="action_confirm">确定</string>
+    <string name="action_today">今天</string>
+    <string name="action_go_check_in">去打卡</string>
+    <string name="action_show">显示</string>
+    <string name="action_hide">隐藏</string>
+    <string name="action_configure">去配置</string>
+    <string name="action_open">查看</string>
+    <string name="loading">加载中…</string>
+
+    <!-- 主页 -->
+    <string name="home_records_today">今日记录</string>
+    <string name="home_records_date">%1$s记录</string>
+    <string name="home_records_count">共 %1$d 条</string>
+    <string name="home_empty_today">今天还没有骑行记录，点击上面的按钮开始记录</string>
+    <string name="home_empty_date">这一天还没有记录</string>
+    <string name="home_empty_title">还没有骑行记录</string>
+    <string name="home_summary_empty">尚未打卡</string>
+    <string name="home_summary">%1$d次 · %2$s km</string>
+    <string name="home_summary_today">今天 · %1$s</string>
+    <string name="home_add">记录</string>
+    <string name="home_note_empty">无备注</string>
+
+    <!-- 记录表单 -->
+    <string name="record_title_add">新建骑行记录</string>
+    <string name="record_title_edit">编辑记录</string>
+    <string name="record_label_date_time">日期与时间</string>
+    <string name="record_label_date_time_hint">默认当前日期时间</string>
+    <string name="record_label_distance">骑行距离</string>
+    <string name="record_distance_hint">请输入实际骑行距离</string>
+    <string name="record_label_note">备注</string>
+    <string name="record_note_placeholder">今天骑得怎么样？（可选）</string>
+    <string name="record_note_counter">%1$d/%2$d</string>
+    <string name="unit_km">公里</string>
+    <string name="error_distance_empty">请输入骑行距离</string>
+    <string name="error_distance_invalid">请输入有效数字</string>
+    <string name="error_distance_range">距离需在 0.1 – 9999.9 公里之间</string>
+    <string name="error_time_future">日期时间不能晚于当前时间</string>
+    <string name="error_note_too_long">备注最多 200 字</string>
+    <string name="record_clear_distance">清空距离</string>
+
+    <!-- 删除与提示 -->
+    <string name="delete_title">删除这条记录？</string>
+    <string name="delete_message">%1$s %2$s · %3$s km，删除后不可恢复</string>
+    <string name="snackbar_recorded">已记录 %1$s km</string>
+    <string name="snackbar_deleted">已删除</string>
+    <string name="snackbar_restored">已恢复记录</string>
+    <string name="snackbar_updated">已保存修改</string>
+    <string name="snackbar_save_failed">保存失败，请重试</string>
+    <string name="snackbar_delete_failed">删除失败，请重试</string>
+    <string name="snackbar_restore_failed">恢复失败，请重试</string>
+
+    <!-- 日历无障碍 -->
+    <string name="calendar_cd">%1$s，已记录%2$d次，共%3$s公里</string>
+    <string name="calendar_cd_empty">%1$s，无记录</string>
+    <string name="calendar_month_previous">上个月</string>
+    <string name="calendar_month_next">下个月</string>
+
+    <!-- 统计 -->
+    <string name="stats_title">骑行统计</string>
+    <string name="stats_day">日</string>
+    <string name="stats_week">周</string>
+    <string name="stats_month">月</string>
+    <string name="stats_count">骑行次数</string>
+    <string name="stats_total">总公里数</string>
+    <string name="stats_avg">日均公里</string>
+    <string name="stats_max">单日最高</string>
+    <string name="stats_streak">连续 %1$d 天</string>
+    <string name="stats_unit_count">次</string>
+    <string name="stats_unit_km">km</string>
+    <string name="stats_mom_none">上月无数据</string>
+    <string name="stats_mom_up">较上月 +%1$s%%</string>
+    <string name="stats_mom_down">较上月 -%1$s%%</string>
+    <string name="stats_mom_flat">较上月持平</string>
+    <string name="stats_avg_days">按 %1$d 天计算</string>
+    <string name="stats_count_total">共 %1$d 次</string>
+    <string name="stats_chart_week">本周骑行数据</string>
+    <string name="stats_chart_day">今日骑行数据</string>
+    <string name="stats_chart_month">本月骑行数据</string>
+    <string name="stats_chart_legend">每日骑行距离</string>
+    <string name="stats_detail">明细</string>
+    <string name="stats_detail_selected">%1$s 的骑行</string>
+    <string name="stats_group_summary">%1$d次 · %2$s km</string>
+    <string name="stats_empty">还没有骑行数据</string>
+    <string name="stats_empty_hint">记录第一次骑行，开始积累你的里程</string>
+    <string name="stats_back_today">回到今天</string>
+    <string name="stats_back_week">回到本周</string>
+    <string name="stats_back_month">回到本月</string>
+    <string name="stats_previous">上一周期</string>
+    <string name="stats_next">下一周期</string>
+    <string name="stats_max_day">%1$s</string>
+    <string name="stats_mark">连续打卡 %1$d 天</string>
+
+    <!-- 设置 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_section_data">数据</string>
+    <string name="settings_section_general">通用</string>
+    <string name="settings_section_about">关于</string>
+    <string name="settings_webdav">坚果云 WebDAV</string>
+    <string name="settings_webdav_sub">服务器与账号配置</string>
+    <string name="settings_backup">备份到坚果云</string>
+    <string name="settings_backup_sub">全量上传，成功后标记为已备份</string>
+    <string name="settings_restore">从坚果云恢复</string>
+    <string name="settings_restore_sub">选择远端备份文件并合并或覆盖</string>
+    <string name="settings_export">导出到本地文件</string>
+    <string name="settings_export_sub">支持 JSON 与 CSV</string>
+    <string name="settings_import">导入本地文件</string>
+    <string name="settings_import_sub">从 JSON 备份恢复，支持合并或覆盖</string>
+    <string name="settings_clear">清空全部数据</string>
+    <string name="settings_clear_sub">需输入“删除”确认，操作不可恢复</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_theme_light">浅色</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_mark">日历标记样式</string>
+    <string name="settings_mark_dot">圆点</string>
+    <string name="settings_mark_distance">里程数字</string>
+    <string name="settings_decimals">距离小数位</string>
+    <string name="settings_decimals_value">1 位（固定）</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_value">跟随系统</string>
+    <string name="settings_version">版本</string>
+    <string name="settings_version_value">1.0.0</string>
+    <string name="settings_privacy">隐私说明</string>
+    <string name="settings_privacy_body">数据仅存本机，备份由你主动触发。应用不含广告、社交与统计 SDK，也不会收集任何个人信息。</string>
+    <string name="settings_license">开源许可</string>
+    <string name="settings_license_body">本应用使用 Jetpack Compose、Room、OkHttp、kotlinx.serialization 等开源组件，遵循其各自的开源许可。</string>
+    <string name="settings_last_backup">上次备份：%1$s</string>
+    <string name="settings_never_backup">尚未备份</string>
+    <string name="settings_not_configured">尚未配置 WebDAV</string>
+    <string name="settings_backup_done">备份成功（%1$d 条）</string>
+    <string name="settings_restore_done">恢复完成：导入 %1$d 条，跳过 %2$d 条</string>
+    <string name="settings_import_done">导入完成：新增 %1$d 条，跳过 %2$d 条</string>
+    <string name="settings_export_json">导出 JSON</string>
+    <string name="settings_export_csv">导出 CSV</string>
+    <string name="settings_clear_title">清空全部数据？</string>
+    <string name="settings_clear_message">此操作不可恢复。请输入“删除”以确认。</string>
+    <string name="settings_clear_hint">输入“删除”</string>
+    <string name="settings_clear_word">删除</string>
+    <string name="settings_clear_confirm">确认清空</string>
+    <string name="settings_import_title">选择导入方式</string>
+    <string name="settings_import_message">检测到 %1$d 条记录</string>
+    <string name="settings_merge">合并（去重）</string>
+    <string name="settings_overwrite">覆盖（清空本机）</string>
+    <string name="settings_busy">正在处理…</string>
+    <string name="settings_busy_backup">正在备份…</string>
+    <string name="settings_busy_restore">正在恢复…</string>
+    <string name="settings_restore_title">选择备份文件</string>
+    <string name="settings_restore_empty">暂无备份</string>
+    <string name="settings_file_meta">%1$s · %2$s 条 · %3$s</string>
+    <string name="settings_file_no_count">%1$s · 条数未知 · %2$s</string>
+    <string name="settings_exported">已导出 %1$d 条记录</string>
+    <string name="settings_export_failed">导出失败：%1$s</string>
+    <string name="settings_clear_done">已清空全部数据</string>
+    <string name="settings_clear_failed">清空失败，请重试</string>
+    <string name="settings_import_failed">导入失败，请重试</string>
+    <string name="settings_invalid_file">文件损坏或版本不兼容</string>
+    <string name="settings_remote_empty">远端目录还没有备份文件</string>
+    <string name="settings_unknown_error">未知错误</string>
+
+    <!-- WebDAV -->
+    <string name="webdav_title">坚果云 WebDAV</string>
+    <string name="webdav_hint">坚果云需在账户安全中开启 WebDAV，并生成“应用密码”。请勿填写登录密码。</string>
+    <string name="webdav_server">服务器地址</string>
+    <string name="webdav_account">账号（邮箱）</string>
+    <string name="webdav_password">应用密码</string>
+    <string name="webdav_dir">远端目录</string>
+    <string name="webdav_test">测试连接</string>
+    <string name="webdav_save">保存配置</string>
+    <string name="webdav_testing">正在连接…</string>
+    <string name="webdav_success">连接成功，目录可访问</string>
+    <string name="webdav_saved">配置已保存</string>
+    <string name="webdav_required">请先填写完整配置</string>
+    <string name="error_https">仅支持 HTTPS 服务器地址</string>
+    <string name="error_unauthorized">应用密码无效或 WebDAV 未开启</string>
+    <string name="error_forbidden">无权限访问远端目录</string>
+    <string name="error_not_found">远端目录不存在</string>
+    <string name="error_server">服务器异常（HTTP %1$d）</string>
+    <string name="error_http">请求失败（HTTP %1$d）</string>
+    <string name="error_timeout">连接超时，请检查网络或服务器地址</string>
+    <string name="error_network">网络不可用，请检查网络连接</string>
+    <string name="error_invalid_response">服务器返回内容无法识别</string>
+    <string name="error_invalid_data">备份文件损坏或版本不兼容</string>
+
+    <!-- 无障碍 -->
+    <string name="cd_open_settings">打开设置</string>
+    <string name="cd_add_record">添加骑行记录</string>
+    <string name="cd_record_item">%1$s，%2$s 公里</string>
+    <string name="cd_back">返回上一页</string>
+    <string name="cd_delete">删除</string>
+</resources>
