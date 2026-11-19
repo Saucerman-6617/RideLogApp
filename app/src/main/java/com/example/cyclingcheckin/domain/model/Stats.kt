@@ -15,7 +15,10 @@ data class PeriodStat(
     val count: Int,
     val distance: Double,
     val avgPerDay: Double,
-    val maxDay: DayStat?
+    /** 本周期内单日总里程最高的那天（周/月视图显示，日视图为 null）。 */
+    val maxDay: DayStat?,
+    /** 本周期内单次骑行距离最远的那条记录（日视图显示其时间）。 */
+    val maxRecord: Record?
 )
 
 enum class StatsMode {

@@ -180,18 +180,9 @@ fun HomeScreen(
         }
         if (uiState.records.isEmpty()) {
             item {
-                val isToday = uiState.selectedDate == LocalDate.now()
                 EmptyState(
-                    title = if (isToday) {
-                        stringResource(R.string.home_summary_empty)
-                    } else {
-                        stringResource(R.string.home_empty_date)
-                    },
-                    hint = if (isToday) {
-                        stringResource(R.string.home_empty_today)
-                    } else {
-                        stringResource(R.string.home_empty_title)
-                    }
+                    title = stringResource(R.string.home_empty_date),
+                    hint = ""
                 )
             }
         } else {

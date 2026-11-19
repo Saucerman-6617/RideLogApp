@@ -63,6 +63,8 @@ import java.time.YearMonth
 import java.util.Locale
 import kotlin.math.abs
 
+private data class Quad(val a: Int, val b: Int, val c: Int, val d: Int)
+
 @Composable
 fun StatsScreen(
     container: AppContainer,
@@ -333,22 +335,30 @@ private fun SummaryGrid(snapshot: StatsSnapshot, mode: StatsMode) {
         StatsMode.WEEK -> 7
         StatsMode.MONTH -> YearMonth.from(snapshot.anchor).lengthOfMonth()
     }
-    val momPercent = snapshot.monthOverMonthPercent
-    val momText = when {
-        momPercent == null -> stringResource(R.string.stats_mom_none)
-        abs(momPercent) < 0.05 -> stringResource(R.string.stats_mom_flat)
-        momPercent > 0 -> stringResource(
-            R.string.stats_mom_up,
-            String.format(Locale.US, "%.1f", momPercent)
+    val percent = snapshot.periodOverPeriodPercent
+    val (noneStr, upStr, downStr, flatStr) = when (mode) {
+        StatsMode.DAY -> Quad(
+            R.string.stats_prior_day_none, R.string.stats_prior_day_up,
+            R.string.stats_prior_day_down, R.string.stats_prior_day_flat
         )
-        else -> stringResource(
-            R.string.stats_mom_down,
-            String.format(Locale.US, "%.1f", abs(momPercent))
+        StatsMode.WEEK -> Quad(
+            R.string.stats_prior_week_none, R.string.stats_prior_week_up,
+            R.string.stats_prior_week_down, R.string.stats_prior_week_flat
+        )
+        StatsMode.MONTH -> Quad(
+            R.string.stats_prior_month_none, R.string.stats_prior_month_up,
+            R.string.stats_prior_month_down, R.string.stats_prior_month_flat
         )
     }
-    val momColor = when {
-        momPercent == null -> RideLogTheme.colors.secondaryText
-        momPercent >= 0 -> RideLogTheme.colors.success
+    val compText = when {
+        percent == null -> stringResource(noneStr)
+        kotlin.math.abs(percent) < 0.05 -> stringResource(flatStr)
+        percent > 0 -> stringResource(upStr, String.format(Locale.US, "%.1f", percent))
+        else -> stringResource(downStr, String.format(Locale.US, "%.1f", kotlin.math.abs(percent)))
+    }
+    val compColor = when {
+        percent == null -> RideLogTheme.colors.secondaryText
+        percent >= 0 -> RideLogTheme.colors.success
         else -> RideLogTheme.colors.accent
     }
 
@@ -376,8 +386,8 @@ private fun SummaryGrid(snapshot: StatsSnapshot, mode: StatsMode) {
                 label = stringResource(R.string.stats_total),
                 value = TimeUtils.formatDistance(snapshot.summary.distance),
                 unit = stringResource(R.string.stats_unit_km),
-                footer = momText,
-                footerColor = momColor
+                footer = compText,
+                footerColor = compColor
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -408,11 +418,21 @@ private fun SummaryGrid(snapshot: StatsSnapshot, mode: StatsMode) {
                     )
                 },
                 label = stringResource(R.string.stats_max),
-                value = TimeUtils.formatDistance(snapshot.summary.maxDay?.distance ?: 0.0),
+                value = TimeUtils.formatDistance(
+                    when (mode) {
+                        StatsMode.DAY -> snapshot.summary.maxRecord?.distance ?: 0.0
+                        else -> snapshot.summary.maxDay?.distance ?: 0.0
+                    }
+                ),
                 unit = stringResource(R.string.stats_unit_km),
-                footer = snapshot.summary.maxDay?.let {
-                    stringResource(R.string.stats_max_day, TimeUtils.dayLabel(it.date))
-                } ?: "—",
+                footer = when (mode) {
+                    StatsMode.DAY -> snapshot.summary.maxRecord?.let {
+                        stringResource(R.string.stats_max_day, TimeUtils.formatTime(it.time))
+                    } ?: "—"
+                    else -> snapshot.summary.maxDay?.let {
+                        stringResource(R.string.stats_max_day, TimeUtils.dayLabel(it.date))
+                    } ?: "—"
+                },
                 footerColor = RideLogTheme.colors.secondaryText
             )
         }

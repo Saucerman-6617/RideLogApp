@@ -20,7 +20,8 @@ data class StatsSnapshot(
     val days: List<DayStat>,
     val records: List<Record>,
     val streak: Int,
-    val monthOverMonthPercent: Double?
+    /** 当前周期 vs 上一周期的总里程变化百分比。null = 上一周期无数据。 */
+    val periodOverPeriodPercent: Double?
 )
 
 class StatsRepository(
@@ -28,11 +29,7 @@ class StatsRepository(
 ) {
 
     fun compute(allRecords: List<Record>, mode: StatsMode, anchor: LocalDate): StatsSnapshot {
-        val (start, end) = when (mode) {
-            StatsMode.DAY -> anchor to anchor
-            StatsMode.WEEK -> TimeUtils.startOfWeek(anchor) to TimeUtils.startOfWeek(anchor).plusDays(6)
-            StatsMode.MONTH -> TimeUtils.startOfMonth(anchor) to TimeUtils.endOfMonth(anchor)
-        }
+        val (start, end) = periodRange(mode, anchor)
         val periodRecords = allRecords
             .filter { !it.date.isBefore(start) && !it.date.isAfter(end) }
             .sortedWith(compareByDescending<Record> { it.date }.thenByDescending { it.time })
@@ -57,7 +54,8 @@ class StatsRepository(
             StatsMode.WEEK -> 7
             StatsMode.MONTH -> end.dayOfMonth
         }
-        val maxDay = days.filter { it.count > 0 }.maxByOrNull { it.distance }
+        val maxDay = if (mode == StatsMode.DAY) null else days.filter { it.count > 0 }.maxByOrNull { it.distance }
+        val maxRecord = periodRecords.maxByOrNull { it.distance }
         val label = when (mode) {
             StatsMode.DAY -> "${TimeUtils.dayLabel(anchor)} ${TimeUtils.weekdayLong(anchor)}"
             StatsMode.WEEK -> TimeUtils.weekLabel(start)
@@ -69,7 +67,8 @@ class StatsRepository(
             count = count,
             distance = total,
             avgPerDay = Validators.roundDistance(if (dayCount == 0) 0.0 else total / dayCount),
-            maxDay = maxDay
+            maxDay = maxDay,
+            maxRecord = maxRecord
         )
 
         return StatsSnapshot(
@@ -82,21 +81,41 @@ class StatsRepository(
             days = days,
             records = periodRecords,
             streak = TimeUtils.streakDays(allRecords.map { it.date }.toSet()),
-            monthOverMonthPercent = monthOverMonth(allRecords)
+            periodOverPeriodPercent = periodOverPeriodPercent(allRecords, mode, anchor)
         )
     }
 
     /**
-     * 本月相对上月的总里程变化百分比。
-     * 上月无数据时返回 null（UI 展示“上月无数据”）。
+     * 当前周期 vs 上一周期的总里程变化百分比。
+     * - DAY  → 前一天
+     * - WEEK → 上一周
+     * - MONTH → 上一月
+     * 上一周期无数据时返回 null。
      */
-    fun monthOverMonth(allRecords: List<Record>, today: LocalDate = LocalDate.now()): Double? {
-        val thisMonth = YearMonth.from(today)
-        val lastMonth = thisMonth.minusMonths(1)
-        val current = allRecords.filter { YearMonth.from(it.date) == thisMonth }.sumOf { it.distance }
-        val previous = allRecords.filter { YearMonth.from(it.date) == lastMonth }.sumOf { it.distance }
-        if (previous <= 0.0) return null
-        return (current - previous) / previous * 100.0
+    fun periodOverPeriodPercent(
+        allRecords: List<Record>,
+        mode: StatsMode,
+        anchor: LocalDate
+    ): Double? {
+        val (curStart, curEnd) = periodRange(mode, anchor)
+        val curTotal = allRecords.filter { !it.date.isBefore(curStart) && !it.date.isAfter(curEnd) }
+            .sumOf { it.distance }
+        val prevAnchor = when (mode) {
+            StatsMode.DAY -> anchor.minusDays(1)
+            StatsMode.WEEK -> TimeUtils.startOfWeek(anchor).minusDays(7)
+            StatsMode.MONTH -> YearMonth.from(anchor).minusMonths(1).atEndOfMonth()
+        }
+        val (prevStart, prevEnd) = periodRange(mode, prevAnchor)
+        val prevTotal = allRecords.filter { !it.date.isBefore(prevStart) && !it.date.isAfter(prevEnd) }
+            .sumOf { it.distance }
+        if (prevTotal <= 0.0) return null
+        return (curTotal - prevTotal) / prevTotal * 100.0
+    }
+
+    private fun periodRange(mode: StatsMode, anchor: LocalDate): Pair<LocalDate, LocalDate> = when (mode) {
+        StatsMode.DAY -> anchor to anchor
+        StatsMode.WEEK -> TimeUtils.startOfWeek(anchor) to TimeUtils.startOfWeek(anchor).plusDays(6)
+        StatsMode.MONTH -> TimeUtils.startOfMonth(anchor) to TimeUtils.endOfMonth(anchor)
     }
 
     private fun dayStat(date: LocalDate, records: List<Record>): DayStat = DayStat(

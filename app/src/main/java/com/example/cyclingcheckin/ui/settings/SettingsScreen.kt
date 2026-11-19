@@ -24,9 +24,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LooksOne
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -153,7 +161,7 @@ fun SettingsScreen(
             item { SettingsSectionTitle(stringResource(R.string.settings_section_data)) }
             item {
                 SettingRow(
-                    icon = { Icon(painterResource(R.drawable.ic_bike), null, tint = MaterialTheme.colorScheme.primary) },
+                    icon = { Icon(Icons.Filled.Cloud, null, tint = MaterialTheme.colorScheme.primary) },
                     title = stringResource(R.string.settings_webdav),
                     subtitle = if (uiState.settings.webDavConfigured) {
                         uiState.settings.webDavAccount
@@ -165,7 +173,7 @@ fun SettingsScreen(
             }
             item {
                 SettingRow(
-                    icon = { Icon(Icons.Filled.Place, null, tint = MaterialTheme.colorScheme.primary) },
+                    icon = { Icon(Icons.Filled.Sync, null, tint = MaterialTheme.colorScheme.primary) },
                     title = stringResource(R.string.settings_backup_restore),
                     subtitle = if (uiState.settings.webDavConfigured) {
                         uiState.settings.lastBackupAt?.let {
@@ -179,7 +187,7 @@ fun SettingsScreen(
             }
             item {
                 SettingRow(
-                    icon = { Icon(Icons.Filled.Place, null, tint = MaterialTheme.colorScheme.primary) },
+                    icon = { Icon(Icons.Filled.FileDownload, null, tint = MaterialTheme.colorScheme.primary) },
                     title = stringResource(R.string.settings_export),
                     subtitle = stringResource(R.string.settings_export_sub),
                     onClick = { showExportDialog = true }
@@ -187,7 +195,7 @@ fun SettingsScreen(
             }
             item {
                 SettingRow(
-                    icon = { Icon(Icons.Filled.DateRange, null, tint = MaterialTheme.colorScheme.primary) },
+                    icon = { Icon(Icons.Filled.FileUpload, null, tint = MaterialTheme.colorScheme.primary) },
                     title = stringResource(R.string.settings_import),
                     subtitle = stringResource(R.string.settings_import_sub),
                     onClick = {
@@ -219,7 +227,7 @@ fun SettingsScreen(
             item { SettingsSectionTitle(stringResource(R.string.settings_section_general)) }
             item {
                 SettingRow(
-                    icon = { Icon(Icons.Filled.Info, null, tint = MaterialTheme.colorScheme.primary) },
+                    icon = { Icon(Icons.Filled.Palette, null, tint = MaterialTheme.colorScheme.primary) },
                     title = stringResource(R.string.settings_theme),
                     subtitle = themeLabel(uiState.settings.themeMode),
                     onClick = { showThemeDialog = true }
@@ -227,7 +235,7 @@ fun SettingsScreen(
             }
             item {
                 SettingRow(
-                    icon = { Icon(painterResource(R.drawable.ic_bike), null, tint = MaterialTheme.colorScheme.primary) },
+                    icon = { Icon(Icons.Filled.Star, null, tint = MaterialTheme.colorScheme.primary) },
                     title = stringResource(R.string.settings_mark),
                     subtitle = markLabel(uiState.settings.calendarMarkStyle),
                     onClick = { showMarkDialog = true }
@@ -235,7 +243,7 @@ fun SettingsScreen(
             }
             item {
                 SettingRow(
-                    icon = { Icon(Icons.Filled.DateRange, null, tint = MaterialTheme.colorScheme.primary) },
+                    icon = { Icon(Icons.Filled.LooksOne, null, tint = MaterialTheme.colorScheme.primary) },
                     title = stringResource(R.string.settings_decimals),
                     subtitle = stringResource(R.string.settings_decimals_value),
                     enabled = false,
@@ -244,7 +252,7 @@ fun SettingsScreen(
             }
             item {
                 SettingRow(
-                    icon = { Icon(Icons.Filled.Info, null, tint = MaterialTheme.colorScheme.primary) },
+                    icon = { Icon(Icons.Filled.Language, null, tint = MaterialTheme.colorScheme.primary) },
                     title = stringResource(R.string.settings_language),
                     subtitle = stringResource(R.string.settings_language_value),
                     enabled = false,
@@ -264,7 +272,7 @@ fun SettingsScreen(
             }
             item {
                 SettingRow(
-                    icon = { Icon(Icons.Filled.Info, null, tint = MaterialTheme.colorScheme.primary) },
+                    icon = { Icon(Icons.Filled.Shield, null, tint = MaterialTheme.colorScheme.primary) },
                     title = stringResource(R.string.settings_privacy),
                     subtitle = stringResource(R.string.settings_privacy_body),
                     onClick = { showPrivacyDialog = true }
@@ -272,7 +280,7 @@ fun SettingsScreen(
             }
             item {
                 SettingRow(
-                    icon = { Icon(Icons.Filled.Info, null, tint = MaterialTheme.colorScheme.primary) },
+                    icon = { Icon(Icons.Filled.Description, null, tint = MaterialTheme.colorScheme.primary) },
                     title = stringResource(R.string.settings_license),
                     subtitle = stringResource(R.string.settings_license_body),
                     onClick = { showLicenseDialog = true }
