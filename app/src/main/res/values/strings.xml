@@ -39,6 +39,7 @@
     <string name="home_summary_today">今天 · %1$s</string>
     <string name="home_add">记录</string>
     <string name="home_note_empty">无备注</string>
+    <string name="home_location_cd">当前位置</string>
 
     <!-- 记录表单 -->
     <string name="record_title_add">新建骑行记录</string>
@@ -149,7 +150,7 @@
     <string name="settings_language">语言</string>
     <string name="settings_language_value">跟随系统</string>
     <string name="settings_version">版本</string>
-    <string name="settings_version_value">1.0.0</string>
+    <string name="settings_version_value">1.0.7</string>
     <string name="settings_privacy">隐私说明</string>
     <string name="settings_privacy_body">数据仅存本机，备份由你主动触发。应用不含广告、社交与统计 SDK，也不会收集任何个人信息。</string>
     <string name="settings_license">开源许可</string>
@@ -177,7 +178,7 @@
     <string name="settings_backup_restore_title">备份与恢复</string>
     <string name="settings_backup_restore_hint">点击下方按钮立即备份，或浏览远端目录选择备份文件恢复</string>
     <string name="settings_auto_backup_title">自动备份</string>
-    <string name="settings_auto_backup_sub">新增骑行记录后自动备份一次到坚果云</string>
+    <string name="settings_auto_backup_sub">新增或删除骑行记录后自动备份</string>
     <string name="settings_backup_files">备份文件</string>
     <string name="settings_restore_confirm_title">恢复数据</string>
     <string name="settings_restore_confirm_body">是否从该文件恢复数据？</string>

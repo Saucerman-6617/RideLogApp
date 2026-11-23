@@ -1,5 +1,8 @@
 package com.example.cyclingcheckin.ui.home
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,12 +15,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -45,11 +50,16 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cyclingcheckin.AppContainer
 import com.example.cyclingcheckin.R
+import com.example.cyclingcheckin.data.remote.WeatherForecast
+import com.example.cyclingcheckin.data.remote.WeatherIcon
 import com.example.cyclingcheckin.domain.model.Record
 import com.example.cyclingcheckin.ui.components.BikeIcon
 import com.example.cyclingcheckin.ui.components.EmptyState
@@ -65,11 +75,35 @@ fun HomeScreen(
 ) {
     val viewModel: HomeViewModel = viewModel(factory = HomeViewModel.factory(container))
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val weather by viewModel.weather.collectAsStateWithLifecycle()
+    val locationName by viewModel.locationName.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     var showSheet by remember { mutableStateOf(false) }
     var editingRecord by remember { mutableStateOf<Record?>(null) }
     var pendingDelete by remember { mutableStateOf<Record?>(null) }
+
+    // 位置权限：只在首次启动时请求一次，用户拒绝后静默降级
+    val locationLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { _ -> viewModel.refreshWeather() }
+
+    LaunchedEffect(Unit) {
+        val hasCoarse = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        val hasFine = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (!hasCoarse && !hasFine) {
+            locationLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+            )
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.eventFlow.collect { event ->
@@ -110,7 +144,7 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            HomeHeader()
+            HomeHeader(weather = weather, locationName = locationName)
         }
         item {
             CalendarPanel(
@@ -248,7 +282,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeHeader() {
+private fun HomeHeader(weather: WeatherForecast?, locationName: String?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -265,7 +299,7 @@ private fun HomeHeader() {
             BikeIcon(modifier = Modifier.size(24.dp))
         }
         Spacer(modifier = Modifier.padding(horizontal = 5.dp))
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.titleLarge,
@@ -277,6 +311,101 @@ private fun HomeHeader() {
                 color = RideLogTheme.colors.secondaryText
             )
         }
+        if (locationName != null) {
+            LocationBadge(name = locationName)
+            Spacer(modifier = Modifier.padding(horizontal = 4.dp))
+        }
+        if (weather != null) {
+            WeatherWidget(forecast = weather)
+        }
+    }
+}
+
+/** 标题与天气之间的定位标记：上方蓝色定位图标，下方位置名称。 */
+@Composable
+private fun LocationBadge(name: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.widthIn(max = 60.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.LocationOn,
+            contentDescription = stringResource(R.string.home_location_cd),
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp)
+        )
+        Text(
+            text = name,
+            style = MaterialTheme.typography.labelSmall,
+            color = RideLogTheme.colors.secondaryText,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+/** 标题栏右侧的今明两天天气组件。
+ * 样式参考天气样式.jpg：两列并排，每列顶部日期、中间 emoji、底部描述。 */
+@Composable
+private fun WeatherWidget(forecast: WeatherForecast) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        WeatherDayCell(
+            label = "今天",
+            mmdd = forecast.today.date.substringAfter("-"),  // "11-21"
+            icon = WeatherIcon.fromDesc(forecast.today.weather),
+            tempMax = forecast.today.tempMax,
+            tempMin = forecast.today.tempMin
+        )
+        WeatherDayCell(
+            label = "明天",
+            mmdd = forecast.tomorrow.date.substringAfter("-"),
+            icon = WeatherIcon.fromDesc(forecast.tomorrow.weather),
+            tempMax = forecast.tomorrow.tempMax,
+            tempMin = forecast.tomorrow.tempMin
+        )
+    }
+}
+
+@Composable
+private fun WeatherDayCell(
+    label: String,
+    mmdd: String,
+    icon: WeatherIcon,
+    tempMax: Double,
+    tempMin: Double
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = RideLogTheme.colors.secondaryText
+        )
+        Text(
+            text = mmdd.replace("-", "/"),
+            style = MaterialTheme.typography.labelSmall,
+            color = RideLogTheme.colors.secondaryText
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = icon.emoji,
+            style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp)
+        )
+        Text(
+            text = icon.label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = "${tempMax.toInt()}°/${tempMin.toInt()}°",
+            style = MaterialTheme.typography.labelSmall,
+            color = RideLogTheme.colors.secondaryText
+        )
     }
 }
 

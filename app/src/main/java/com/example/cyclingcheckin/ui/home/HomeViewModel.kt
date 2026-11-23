@@ -4,9 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import android.util.Log
 import com.example.cyclingcheckin.AppContainer
 import com.example.cyclingcheckin.data.prefs.SettingsStore
 import com.example.cyclingcheckin.data.remote.BackupService
+import com.example.cyclingcheckin.data.remote.LocationService
+import com.example.cyclingcheckin.data.remote.WeatherForecast
+import com.example.cyclingcheckin.data.remote.WeatherService
 import com.example.cyclingcheckin.data.repo.RecordRepository
 import com.example.cyclingcheckin.domain.model.CalendarMarkStyle
 import com.example.cyclingcheckin.domain.model.DayStat
@@ -54,7 +58,9 @@ sealed interface HomeEvent {
 class HomeViewModel(
     private val repository: RecordRepository,
     private val settingsStore: SettingsStore,
-    private val backupService: BackupService
+    private val backupService: BackupService,
+    private val weatherService: WeatherService,
+    private val locationService: LocationService
 ) : ViewModel() {
 
     private val selectedDate = MutableStateFlow(LocalDate.now())
@@ -62,6 +68,34 @@ class HomeViewModel(
 
     private val events = Channel<HomeEvent>(Channel.BUFFERED)
     val eventFlow = events.receiveAsFlow()
+
+    /** 天气数据：null 表示未加载 / 无权限 / 网络失败，UI 静默降级。 */
+    private val _weather = MutableStateFlow<WeatherForecast?>(null)
+    val weather: StateFlow<WeatherForecast?> = _weather
+
+    /** 当前定位的位置名称（区县 / 城市），null 表示未能解析。 */
+    private val _locationName = MutableStateFlow<String?>(null)
+    val locationName: StateFlow<String?> = _locationName
+
+    init {
+        refreshWeather()
+    }
+
+    /** 尝试获取位置并拉取今明两天天气。永远展示（兜底坐标）。 */
+    fun refreshWeather() {
+        viewModelScope.launch {
+            val (lat, lng) = locationService.getLastKnown()
+            Log.d("HomeVM", "got location: $lat,$lng")
+            val forecast = runCatching { weatherService.fetchForecast(lat, lng) }
+                .onFailure { Log.e("HomeVM", "weather fetch exception", it) }
+                .getOrNull()
+            Log.d("HomeVM", "forecast=$forecast")
+            _weather.value = forecast
+            // 位置名称在天气之后解析，避免拖慢首屏
+            _locationName.value = locationService.getPlaceName(lat, lng)
+            Log.d("HomeVM", "locationName=${_locationName.value}")
+        }
+    }
 
     private val selectedRecords = selectedDate.flatMapLatest { date ->
         repository.observeByDate(date)
@@ -162,7 +196,10 @@ class HomeViewModel(
     fun deleteRecord(record: Record) {
         viewModelScope.launch {
             repository.delete(record)
-                .onSuccess { events.send(HomeEvent.Deleted(record)) }
+                .onSuccess {
+                    events.send(HomeEvent.Deleted(record))
+                    triggerAutoBackup()
+                }
                 .onFailure { events.send(HomeEvent.Failed("删除失败，请重试")) }
         }
     }
@@ -187,7 +224,9 @@ class HomeViewModel(
                 HomeViewModel(
                     container.recordRepository,
                     container.settingsStore,
-                    container.backupService
+                    container.backupService,
+                    container.weatherService,
+                    container.locationService
                 )
             }
         }
