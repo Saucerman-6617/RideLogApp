@@ -2,6 +2,7 @@ package com.example.cyclingcheckin
 
 import android.content.Context
 import com.example.cyclingcheckin.data.local.AppDatabase
+import com.example.cyclingcheckin.data.local.LocationCache
 import com.example.cyclingcheckin.data.prefs.SecureStore
 import com.example.cyclingcheckin.data.prefs.SettingsStore
 import com.example.cyclingcheckin.data.remote.BackupService
@@ -24,6 +25,7 @@ class AppContainer(context: Context) {
     val webDavClient: WebDavClient = WebDavClient()
     val weatherService: WeatherService = WeatherService()
     val locationService: LocationService = LocationService(appContext)
+    val locationCache: LocationCache = LocationCache(appContext)
     val backupService: BackupService = BackupService(
         repository = recordRepository,
         settingsStore = settingsStore,

@@ -72,6 +72,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cyclingcheckin.AppContainer
+import com.example.cyclingcheckin.BuildConfig
 import com.example.cyclingcheckin.R
 import com.example.cyclingcheckin.data.remote.ConflictPolicy
 import com.example.cyclingcheckin.data.remote.RemoteBackupFile
@@ -265,7 +266,7 @@ fun SettingsScreen(
                 SettingRow(
                     icon = { Icon(Icons.Filled.Info, null, tint = MaterialTheme.colorScheme.primary) },
                     title = stringResource(R.string.settings_version),
-                    subtitle = stringResource(R.string.settings_version_value),
+                    subtitle = BuildConfig.VERSION_NAME,
                     enabled = false,
                     onClick = {}
                 )

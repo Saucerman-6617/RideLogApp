@@ -40,6 +40,42 @@
     <string name="home_add">记录</string>
     <string name="home_note_empty">无备注</string>
     <string name="home_location_cd">当前位置</string>
+    <string name="home_location_current">当前位置</string>
+    <string name="home_location_default">北京市</string>
+
+    <!-- 首页励志标语（每次启动随机一条） -->
+    <string-array name="home_quotes">
+        <item>车轮不停，梦想就不远。</item>
+        <item>每一次蹬踏，都是向更好的自己靠近。</item>
+        <item>路在脚下，风在耳边，梦在前方。</item>
+        <item>骑得越远，越相信坚持的力量。</item>
+        <item>上坡考验腿，下坡考验心。</item>
+        <item>没有白走的路，每一公里都算数。</item>
+        <item>风会吹散疲惫，也会带来自由。</item>
+        <item>只要还在骑，就永远在路上。</item>
+        <item>骑行不是赶路，而是感受路。</item>
+        <item>汗水不会骗你，里程会给你答案。</item>
+        <item>越过山丘，你会遇见更辽阔的世界。</item>
+        <item>车把握得越稳，人生方向越清晰。</item>
+        <item>不怕路长，只怕不敢出发。</item>
+        <item>每一次出发，都是对平庸的反击。</item>
+        <item>骑行教会我：慢一点，也能抵达。</item>
+        <item>轮胎滚过的地方，都是勇气的印记。</item>
+        <item>逆风的方向，更适合飞翔，也更适合骑行。</item>
+        <item>别问路有多远，先问自己敢不敢骑。</item>
+        <item>骑行路上，风景属于坚持的人。</item>
+        <item>身体在路上，灵魂在发光。</item>
+        <item>一车一世界，一路一人生。</item>
+        <item>骑行的意义，不只是到达终点。</item>
+        <item>再陡的坡，也挡不住向前的心。</item>
+        <item>出发吧，风会替你加油。</item>
+        <item>骑行让人清醒，也让人热血。</item>
+        <item>车轮向前，烦恼向后。</item>
+        <item>每一段路，都会成就一个更强大的你。</item>
+        <item>骑得久的人，眼里都有光。</item>
+        <item>路虽远，骑则将至。</item>
+        <item>人生如骑行，稳住节奏，就能抵达远方。</item>
+    </string-array>
 
     <!-- 记录表单 -->
     <string name="record_title_add">新建骑行记录</string>
@@ -47,7 +83,7 @@
     <string name="record_label_date_time">日期与时间</string>
     <string name="record_label_date_time_hint">默认当前日期时间</string>
     <string name="record_label_distance">骑行距离</string>
-    <string name="record_distance_hint">请输入实际骑行距离</string>
+    <string name="record_distance_hint">上下滑动选择骑行距离，精确到 0.1 公里</string>
     <string name="record_label_note">备注</string>
     <string name="record_note_placeholder">今天骑得怎么样？（可选）</string>
     <string name="record_note_counter">%1$d/%2$d</string>
@@ -150,7 +186,6 @@
     <string name="settings_language">语言</string>
     <string name="settings_language_value">跟随系统</string>
     <string name="settings_version">版本</string>
-    <string name="settings_version_value">1.0.7</string>
     <string name="settings_privacy">隐私说明</string>
     <string name="settings_privacy_body">数据仅存本机，备份由你主动触发。应用不含广告、社交与统计 SDK，也不会收集任何个人信息。</string>
     <string name="settings_license">开源许可</string>

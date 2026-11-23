@@ -4,6 +4,7 @@ import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,9 +14,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -45,10 +47,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -76,17 +80,39 @@ fun HomeScreen(
     val viewModel: HomeViewModel = viewModel(factory = HomeViewModel.factory(container))
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val weather by viewModel.weather.collectAsStateWithLifecycle()
-    val locationName by viewModel.locationName.collectAsStateWithLifecycle()
+    val location by viewModel.location.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+    // 启动时随机选一条励志标语，整个会话保持不变
+    val quotes = stringArrayResource(R.array.home_quotes)
+    val quote by remember { mutableStateOf(quotes.random()) }
 
     var showSheet by remember { mutableStateOf(false) }
     var editingRecord by remember { mutableStateOf<Record?>(null) }
     var pendingDelete by remember { mutableStateOf<Record?>(null) }
 
-    // 位置权限：只在首次启动时请求一次，用户拒绝后静默降级
+    // 位置权限：首次启动请求一次；点定位图标时如无权限则再次请求
     val locationLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { _ -> viewModel.refreshWeather() }
+
+    val onRefreshLocation: () -> Unit = {
+        val granted = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            viewModel.refreshWeather()
+        } else {
+            locationLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+            )
+        }
+    }
 
     LaunchedEffect(Unit) {
         val hasCoarse = ContextCompat.checkSelfPermission(
@@ -144,7 +170,12 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            HomeHeader(weather = weather, locationName = locationName)
+            HomeHeader(
+                weather = weather,
+                location = location,
+                quote = quote,
+                onRefreshLocation = onRefreshLocation
+            )
         }
         item {
             CalendarPanel(
@@ -282,57 +313,100 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeHeader(weather: WeatherForecast?, locationName: String?) {
+private fun HomeHeader(
+    weather: WeatherForecast?,
+    location: HomeLocation,
+    quote: String,
+    onRefreshLocation: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 2.dp),
+            .padding(top = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            BikeIcon(modifier = Modifier.size(24.dp))
-        }
-        Spacer(modifier = Modifier.padding(horizontal = 5.dp))
+        // 左半部分：Logo + 标题，日期与标语单独占整行，避免被图标挤窄
         Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BikeIcon(modifier = Modifier.size(24.dp))
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1
+                )
+            }
             Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = "${TimeUtils.fullDateLabel(LocalDate.now())} ${TimeUtils.weekdayLong(LocalDate.now())}",
+                text = "${TimeUtils.fullDateLabel(LocalDate.now())}    ${TimeUtils.weekdayLong(LocalDate.now())}",
                 style = MaterialTheme.typography.bodySmall,
-                color = RideLogTheme.colors.secondaryText
+                color = RideLogTheme.colors.secondaryText,
+                maxLines = 1,
+                modifier = Modifier.padding(top = 2.dp)
             )
+            QuoteBar(text = quote)
         }
-        if (locationName != null) {
-            LocationBadge(name = locationName)
-            Spacer(modifier = Modifier.padding(horizontal = 4.dp))
-        }
-        if (weather != null) {
+        Spacer(modifier = Modifier.width(8.dp))
+        // 右半部分：宽度由定位 + 天气内容决定，剩余宽度全部给左侧
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            LocationBadge(
+                name = location.name ?: stringResource(
+                    if (location.usingDefault) R.string.home_location_default
+                    else R.string.home_location_current
+                ),
+                onClick = onRefreshLocation
+            )
+            Spacer(modifier = Modifier.width(6.dp))
             WeatherWidget(forecast = weather)
         }
     }
 }
 
-/** 标题与天气之间的定位标记：上方蓝色定位图标，下方位置名称。 */
+/** 标题下方的励志标语，固定最小高度，保证天气加载前后布局稳定。 */
 @Composable
-private fun LocationBadge(name: String) {
+private fun QuoteBar(text: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 28.dp)
+            .padding(top = 6.dp, bottom = 2.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            fontStyle = FontStyle.Italic,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.78f),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+/** 定位标记：上方蓝色定位图标，下方位置名称，点击重新获取。固定宽度避免标题区宽度变化。 */
+@Composable
+private fun LocationBadge(name: String, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.widthIn(max = 60.dp)
+        modifier = Modifier
+            .width(LOCATION_BADGE_WIDTH)
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 2.dp, vertical = 2.dp)
     ) {
         Icon(
             imageVector = Icons.Filled.LocationOn,
             contentDescription = stringResource(R.string.home_location_cd),
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(27.dp)
         )
         Text(
             text = name,
@@ -344,30 +418,84 @@ private fun LocationBadge(name: String) {
     }
 }
 
-/** 标题栏右侧的今明两天天气组件。
- * 样式参考天气样式.jpg：两列并排，每列顶部日期、中间 emoji、底部描述。 */
+/**
+ * 今明两天天气。始终使用完整布局：
+ * 数据未到时用占位文本（相同行数/字号），保证启动阶段与加载完成后布局完全一致。
+ */
 @Composable
-private fun WeatherWidget(forecast: WeatherForecast) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically
+private fun WeatherWidget(forecast: WeatherForecast?) {
+    Box(
+        modifier = Modifier
+            .width(WEATHER_WIDGET_WIDTH)
+            .height(WEATHER_WIDGET_HEIGHT),
+        contentAlignment = Alignment.Center
     ) {
-        WeatherDayCell(
-            label = "今天",
-            mmdd = forecast.today.date.substringAfter("-"),  // "11-21"
-            icon = WeatherIcon.fromDesc(forecast.today.weather),
-            tempMax = forecast.today.tempMax,
-            tempMin = forecast.today.tempMin
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (forecast != null) {
+                WeatherDayCell(
+                    label = "今天",
+                    mmdd = forecast.today.date.substringAfter("-"),
+                    icon = WeatherIcon.fromDesc(forecast.today.weather),
+                    tempMax = forecast.today.tempMax,
+                    tempMin = forecast.today.tempMin
+                )
+                WeatherDayCell(
+                    label = "明天",
+                    mmdd = forecast.tomorrow.date.substringAfter("-"),
+                    icon = WeatherIcon.fromDesc(forecast.tomorrow.weather),
+                    tempMax = forecast.tomorrow.tempMax,
+                    tempMin = forecast.tomorrow.tempMin
+                )
+            } else {
+                val today = LocalDate.now()
+                WeatherPlaceholderCell(label = "今天", date = today)
+                WeatherPlaceholderCell(label = "明天", date = today.plusDays(1))
+            }
+        }
+    }
+}
+
+/** 天气未加载时的占位单元，结构与 [WeatherDayCell] 一致，确保高度相同。 */
+@Composable
+private fun WeatherPlaceholderCell(label: String, date: LocalDate) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = RideLogTheme.colors.secondaryText
         )
-        WeatherDayCell(
-            label = "明天",
-            mmdd = forecast.tomorrow.date.substringAfter("-"),
-            icon = WeatherIcon.fromDesc(forecast.tomorrow.weather),
-            tempMax = forecast.tomorrow.tempMax,
-            tempMin = forecast.tomorrow.tempMin
+        Text(
+            text = "%02d/%02d".format(date.monthValue, date.dayOfMonth),
+            style = MaterialTheme.typography.labelSmall,
+            color = RideLogTheme.colors.secondaryText
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = "⏳",
+            style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp)
+        )
+        Text(
+            text = "--",
+            style = MaterialTheme.typography.labelSmall,
+            color = RideLogTheme.colors.secondaryText.copy(alpha = 0.6f)
+        )
+        Text(
+            text = "--°/--°",
+            style = MaterialTheme.typography.labelSmall,
+            color = RideLogTheme.colors.secondaryText.copy(alpha = 0.6f)
         )
     }
 }
+
+private val LOCATION_BADGE_WIDTH = 60.dp
+private val WEATHER_WIDGET_WIDTH = 104.dp
+private val WEATHER_WIDGET_HEIGHT = 96.dp
 
 @Composable
 private fun WeatherDayCell(

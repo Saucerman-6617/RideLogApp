@@ -38,16 +38,24 @@ class LocationService(private val context: Context) {
         private const val REQUEST_TIMEOUT_MS = 10_000L
     }
 
-    suspend fun getLastKnown(): Pair<Double, Double> {
-        val manager = lm ?: run { Log.e(TAG, "LocationManager null"); return FALLBACK }
-        if (!hasPermission()) { Log.e(TAG, "no permission"); return FALLBACK }
+    /** 定位结果：坐标 + 是否使用了兜底坐标。 */
+    data class LocationSnapshot(
+        val latitude: Double,
+        val longitude: Double,
+        val isFallback: Boolean
+    )
+
+    suspend fun getLastKnown(): LocationSnapshot {
+        val fallback = LocationSnapshot(FALLBACK.first, FALLBACK.second, isFallback = true)
+        val manager = lm ?: run { Log.e(TAG, "LocationManager null"); return fallback }
+        if (!hasPermission()) { Log.e(TAG, "no permission"); return fallback }
 
         val cached = listOf(LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER)
             .mapNotNull { runCatching { manager.getLastKnownLocation(it) }.getOrNull() }
             .maxByOrNull { it.time }
         if (cached != null && cached.latitude != 0.0) {
             Log.d(TAG, "cache hit: ${cached.latitude},${cached.longitude}")
-            return Pair(cached.latitude, cached.longitude)
+            return LocationSnapshot(cached.latitude, cached.longitude, isFallback = false)
         }
         Log.d(TAG, "cache miss, requesting fresh location...")
 
@@ -56,10 +64,10 @@ class LocationService(private val context: Context) {
         }
         if (fresh != null) {
             Log.d(TAG, "fresh: ${fresh.latitude},${fresh.longitude}")
-            return Pair(fresh.latitude, fresh.longitude)
+            return LocationSnapshot(fresh.latitude, fresh.longitude, isFallback = false)
         }
         Log.w(TAG, "fresh timeout, using fallback")
-        return FALLBACK
+        return fallback
     }
 
     /** 请求一次位置更新，拿到后立刻移除监听器。 */

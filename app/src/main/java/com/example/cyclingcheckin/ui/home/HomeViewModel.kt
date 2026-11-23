@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import android.util.Log
 import com.example.cyclingcheckin.AppContainer
+import com.example.cyclingcheckin.data.local.LocationCache
 import com.example.cyclingcheckin.data.prefs.SettingsStore
 import com.example.cyclingcheckin.data.remote.BackupService
 import com.example.cyclingcheckin.data.remote.LocationService
@@ -46,6 +47,12 @@ data class HomeUiState(
         get() = Validators.roundDistance(records.sumOf { it.distance })
 }
 
+/** 首页定位展示：name 为空表示名称未解析，usingDefault 表示使用了兜底坐标。 */
+data class HomeLocation(
+    val name: String? = null,
+    val usingDefault: Boolean = false
+)
+
 sealed interface HomeEvent {
     data class Added(val record: Record) : HomeEvent
     data class Updated(val record: Record) : HomeEvent
@@ -60,7 +67,8 @@ class HomeViewModel(
     private val settingsStore: SettingsStore,
     private val backupService: BackupService,
     private val weatherService: WeatherService,
-    private val locationService: LocationService
+    private val locationService: LocationService,
+    private val locationCache: LocationCache
 ) : ViewModel() {
 
     private val selectedDate = MutableStateFlow(LocalDate.now())
@@ -73,27 +81,46 @@ class HomeViewModel(
     private val _weather = MutableStateFlow<WeatherForecast?>(null)
     val weather: StateFlow<WeatherForecast?> = _weather
 
-    /** 当前定位的位置名称（区县 / 城市），null 表示未能解析。 */
-    private val _locationName = MutableStateFlow<String?>(null)
-    val locationName: StateFlow<String?> = _locationName
+    /** 定位展示信息：name 为空表示名称未解析；usingDefault 表示用了兜底坐标。 */
+    private val _location = MutableStateFlow(HomeLocation())
+    val location: StateFlow<HomeLocation> = _location
 
     init {
         refreshWeather()
     }
 
-    /** 尝试获取位置并拉取今明两天天气。永远展示（兜底坐标）。 */
+    /** 重新获取位置并拉取今明两天天气（点击定位图标时调用）。 */
     fun refreshWeather() {
         viewModelScope.launch {
-            val (lat, lng) = locationService.getLastKnown()
-            Log.d("HomeVM", "got location: $lat,$lng")
-            val forecast = runCatching { weatherService.fetchForecast(lat, lng) }
+            val snapshot = locationService.getLastKnown()
+            // 本次没拿到定位时，优先用上次成功定位的缓存地址
+            val cache = if (snapshot.isFallback) locationCache.load() else null
+            val latitude = cache?.latitude ?: snapshot.latitude
+            val longitude = cache?.longitude ?: snapshot.longitude
+            Log.d(
+                "HomeVM",
+                "fallback=${snapshot.isFallback} useCache=${cache != null} coords=$latitude,$longitude"
+            )
+
+            val forecast = runCatching { weatherService.fetchForecast(latitude, longitude) }
                 .onFailure { Log.e("HomeVM", "weather fetch exception", it) }
                 .getOrNull()
             Log.d("HomeVM", "forecast=$forecast")
             _weather.value = forecast
-            // 位置名称在天气之后解析，避免拖慢首屏
-            _locationName.value = locationService.getPlaceName(lat, lng)
-            Log.d("HomeVM", "locationName=${_locationName.value}")
+
+            // 名称解析：真实定位→解析并写入缓存；使用缓存→沿用缓存名称，缺失时补解析
+            val name = if (snapshot.isFallback) {
+                cache?.name ?: locationService.getPlaceName(latitude, longitude)
+            } else {
+                locationService.getPlaceName(latitude, longitude)
+            }
+            if (!snapshot.isFallback) {
+                locationCache.save(latitude, longitude, name)
+            } else if (cache != null && cache.name == null && name != null) {
+                locationCache.save(latitude, longitude, name)
+            }
+            _location.value = HomeLocation(name = name, usingDefault = snapshot.isFallback)
+            Log.d("HomeVM", "location=$_location")
         }
     }
 
@@ -226,7 +253,8 @@ class HomeViewModel(
                     container.settingsStore,
                     container.backupService,
                     container.weatherService,
-                    container.locationService
+                    container.locationService,
+                    container.locationCache
                 )
             }
         }
