@@ -268,9 +268,12 @@ fun HomeScreen(
         RecordEditSheet(
             existing = editingRecord,
             preselectedDate = uiState.selectedDate,
+            frequentAddresses = uiState.frequentAddresses,
+            onSaveFrequentAddress = viewModel::saveFrequentAddress,
+            onDeleteFrequentAddress = viewModel::deleteFrequentAddress,
             onDismiss = { showSheet = false },
-            onSave = { date, time, distance, note ->
-                viewModel.saveRecord(editingRecord, date, time, distance, note)
+            onSave = { date, time, distance, note, routeStart, routeEnd ->
+                viewModel.saveRecord(editingRecord, date, time, distance, note, routeStart, routeEnd)
                 showSheet = false
             }
         )

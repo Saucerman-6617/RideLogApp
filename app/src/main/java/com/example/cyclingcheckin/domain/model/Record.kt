@@ -11,6 +11,8 @@ data class Record(
     val time: LocalTime,
     val distance: Double,
     val note: String,
+    val routeStart: String = "",
+    val routeEnd: String = "",
     val createdAt: Long,
     val updatedAt: Long,
     val dirty: Boolean

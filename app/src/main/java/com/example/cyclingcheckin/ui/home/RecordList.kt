@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -195,13 +196,16 @@ fun RecordRow(
                     .padding(horizontal = 16.dp, vertical = 13.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // 整行按 1:2:1 四等分：时间+备注 / 骑行路线 / 公里数
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = TimeUtils.formatTime(record.time),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontFamily = FontFamily.Monospace
                         ),
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Spacer(Modifier.heightIn(min = 2.dp))
                     Text(
@@ -212,7 +216,21 @@ fun RecordRow(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = record.routeText().orEmpty(),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(2f)
+                )
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.Bottom
+                ) {
                     Text(
                         text = TimeUtils.formatDistance(record.distance),
                         style = MaterialTheme.typography.headlineSmall.copy(
@@ -220,16 +238,25 @@ fun RecordRow(
                             fontWeight = FontWeight.Bold,
                             fontSize = 22.sp
                         ),
-                        color = RideLogTheme.colors.accent
+                        color = RideLogTheme.colors.accent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = " km",
                         style = MaterialTheme.typography.bodySmall,
                         color = RideLogTheme.colors.secondaryText,
+                        maxLines = 1,
                         modifier = Modifier.padding(bottom = 2.dp)
                     )
                 }
             }
         }
     }
+}
+
+/** 骑行路线的展示文本：起点 → 终点；只填一侧时仅显示该侧，均为空返回 null。 */
+private fun Record.routeText(): String? {
+    val parts = listOf(routeStart.trim(), routeEnd.trim()).filter { it.isNotEmpty() }
+    return if (parts.isEmpty()) null else parts.joinToString(" → ")
 }

@@ -21,7 +21,8 @@ data class AppSettings(
     val lastBackupAt: Long? = null,
     val webDavServer: String = DEFAULT_WEBDAV_SERVER,
     val webDavAccount: String = "",
-    val webDavRemoteDir: String = DEFAULT_WEBDAV_DIR
+    val webDavRemoteDir: String = DEFAULT_WEBDAV_DIR,
+    val frequentAddresses: List<FrequentAddress> = emptyList()
 ) {
     val webDavConfigured: Boolean
         get() = webDavServer.isNotBlank() && webDavAccount.isNotBlank()

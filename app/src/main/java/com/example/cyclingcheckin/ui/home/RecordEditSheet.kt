@@ -1,10 +1,13 @@
 package com.example.cyclingcheckin.ui.home
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,10 +26,16 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.DatePicker
@@ -57,6 +66,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -65,6 +79,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.cyclingcheckin.R
+import com.example.cyclingcheckin.domain.model.FrequentAddress
 import com.example.cyclingcheckin.domain.model.Record
 import com.example.cyclingcheckin.domain.model.RecordFieldError
 import com.example.cyclingcheckin.domain.model.Validators
@@ -83,8 +98,18 @@ import kotlin.math.roundToInt
 fun RecordEditSheet(
     existing: Record?,
     preselectedDate: LocalDate? = null,
+    frequentAddresses: List<FrequentAddress> = emptyList(),
+    onSaveFrequentAddress: (FrequentAddress) -> Unit = {},
+    onDeleteFrequentAddress: (FrequentAddress) -> Unit = {},
     onDismiss: () -> Unit,
-    onSave: (date: LocalDate, time: LocalTime, distance: Double, note: String) -> Unit
+    onSave: (
+        date: LocalDate,
+        time: LocalTime,
+        distance: Double,
+        note: String,
+        routeStart: String,
+        routeEnd: String
+    ) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var dateEpochDay by rememberSaveable(existing?.id) {
@@ -110,6 +135,18 @@ fun RecordEditSheet(
     var note by rememberSaveable(existing?.id) {
         mutableStateOf(existing?.note.orEmpty())
     }
+    var routeStart by rememberSaveable(existing?.id) {
+        mutableStateOf(existing?.routeStart.orEmpty())
+    }
+    var routeEnd by rememberSaveable(existing?.id) {
+        mutableStateOf(existing?.routeEnd.orEmpty())
+    }
+    // 常用地址点击后填入最近聚焦的一侧输入框，默认起点
+    var activeRouteTarget by rememberSaveable(existing?.id) {
+        mutableStateOf(RouteTarget.START)
+    }
+    var showAddressEditor by remember { mutableStateOf(false) }
+    var editingAddress by remember { mutableStateOf<FrequentAddress?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
 
@@ -153,7 +190,7 @@ fun RecordEditSheet(
                 TextButton(
                     onClick = {
                         val distance = validation.distance ?: return@TextButton
-                        onSave(date, time, distance, note)
+                        onSave(date, time, distance, note, routeStart, routeEnd)
                     },
                     enabled = validation.isValid
                 ) {
@@ -240,6 +277,63 @@ fun RecordEditSheet(
                             MaterialTheme.colorScheme.error
                         } else {
                             RideLogTheme.colors.secondaryText
+                        }
+                    )
+                }
+
+                Column {
+                    Text(
+                        text = stringResource(R.string.record_label_route),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        RouteField(
+                            value = routeStart,
+                            onValueChange = { routeStart = it },
+                            placeholder = stringResource(R.string.record_route_start_hint),
+                            icon = Icons.Filled.LocationOn,
+                            iconTint = MaterialTheme.colorScheme.primary,
+                            onFocused = { activeRouteTarget = RouteTarget.START },
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        RouteField(
+                            value = routeEnd,
+                            onValueChange = { routeEnd = it },
+                            placeholder = stringResource(R.string.record_route_end_hint),
+                            icon = Icons.Filled.Flag,
+                            iconTint = RideLogTheme.colors.danger,
+                            onFocused = { activeRouteTarget = RouteTarget.END },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    FrequentAddressChips(
+                        addresses = frequentAddresses,
+                        onPick = { address ->
+                            when (activeRouteTarget) {
+                                RouteTarget.START -> routeStart = address.name
+                                RouteTarget.END -> routeEnd = address.name
+                            }
+                        },
+                        onEdit = { address ->
+                            editingAddress = address
+                            showAddressEditor = true
+                        },
+                        onAdd = {
+                            editingAddress = null
+                            showAddressEditor = true
                         }
                     )
                 }
@@ -391,6 +485,21 @@ fun RecordEditSheet(
             }
         }
     }
+
+    if (showAddressEditor) {
+        FrequentAddressSheet(
+            existing = editingAddress,
+            onDismiss = { showAddressEditor = false },
+            onSave = { address ->
+                onSaveFrequentAddress(address)
+                showAddressEditor = false
+            },
+            onDelete = { address ->
+                onDeleteFrequentAddress(address)
+                showAddressEditor = false
+            }
+        )
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -399,6 +508,7 @@ fun RecordEditSheet(
 
 private const val MAX_KM = 9999
 private const val DEFAULT_DISTANCE_KM = 5.0
+private const val MAX_ROUTE_LENGTH = 30
 private val WHEEL_ITEM_HEIGHT = 36.dp
 private const val WHEEL_VISIBLE_COUNT = 3
 
@@ -569,6 +679,131 @@ private fun LazyListState.centerItemIndex(): Int {
         .minByOrNull { abs(it.offset + it.size / 2 - center) }
         ?.index ?: firstVisibleItemIndex
 }
+
+/** 骑行路线输入框：图标 + 单行文本，样式与日期时间选择框一致。 */
+@Composable
+private fun RouteField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    icon: ImageVector,
+    iconTint: Color,
+    onFocused: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(18.dp)
+            )
+            Box(modifier = Modifier.weight(1f)) {
+                if (value.isEmpty()) {
+                    Text(
+                        text = placeholder,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = RideLogTheme.colors.secondaryText,
+                        maxLines = 1
+                    )
+                }
+                BasicTextField(
+                    value = value,
+                    onValueChange = {
+                        if (it.length <= MAX_ROUTE_LENGTH) onValueChange(it)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { if (it.isFocused) onFocused() },
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    singleLine = true,
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary)
+                )
+            }
+        }
+    }
+}
+
+/** 常用地址快捷 chips：点击写入当前输入框，长按编辑，末尾「+」新增。 */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun FrequentAddressChips(
+    addresses: List<FrequentAddress>,
+    onPick: (FrequentAddress) -> Unit,
+    onEdit: (FrequentAddress) -> Unit,
+    onAdd: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        addresses.forEach { address ->
+            Surface(
+                modifier = Modifier.combinedClickable(
+                    onClick = { onPick(address) },
+                    onLongClick = { onEdit(address) }
+                ),
+                shape = RoundedCornerShape(18.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = address.icon.vector,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = address.name,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+        Surface(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .clickable(onClick = onAdd),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.cd_add_frequent_address),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
+}
+
+private enum class RouteTarget { START, END }
 
 @Composable
 private fun FieldShell(

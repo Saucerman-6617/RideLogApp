@@ -10,15 +10,20 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.cyclingcheckin.domain.model.AppSettings
 import com.example.cyclingcheckin.domain.model.CalendarMarkStyle
+import com.example.cyclingcheckin.domain.model.FrequentAddress
 import com.example.cyclingcheckin.domain.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "ride_log_settings")
 
 class SettingsStore(context: Context) {
 
     private val dataStore = context.applicationContext.settingsDataStore
+
+    private val json = Json { ignoreUnknownKeys = true }
 
     val settings: Flow<AppSettings> = dataStore.data.map { prefs ->
         AppSettings(
@@ -32,7 +37,8 @@ class SettingsStore(context: Context) {
             lastBackupAt = prefs[KEY_LAST_BACKUP_AT],
             webDavServer = prefs[KEY_WEBDAV_SERVER] ?: AppSettings.DEFAULT_WEBDAV_SERVER,
             webDavAccount = prefs[KEY_WEBDAV_ACCOUNT].orEmpty(),
-            webDavRemoteDir = prefs[KEY_WEBDAV_DIR] ?: AppSettings.DEFAULT_WEBDAV_DIR
+            webDavRemoteDir = prefs[KEY_WEBDAV_DIR] ?: AppSettings.DEFAULT_WEBDAV_DIR,
+            frequentAddresses = decodeFrequentAddresses(prefs[KEY_FREQUENT_ADDRESSES])
         )
     }
 
@@ -64,6 +70,22 @@ class SettingsStore(context: Context) {
         dataStore.edit { it[KEY_WEBDAV_DIR] = normalizeDir(value) }
     }
 
+    suspend fun saveFrequentAddresses(addresses: List<FrequentAddress>) {
+        dataStore.edit {
+            it[KEY_FREQUENT_ADDRESSES] = json.encodeToString(
+                ListSerializer(FrequentAddress.serializer()),
+                addresses
+            )
+        }
+    }
+
+    private fun decodeFrequentAddresses(raw: String?): List<FrequentAddress> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return runCatching {
+            json.decodeFromString(ListSerializer(FrequentAddress.serializer()), raw)
+        }.getOrDefault(emptyList())
+    }
+
     private fun normalizeDir(value: String): String {
         val trimmed = value.trim()
         if (trimmed.isEmpty()) return "/"
@@ -78,5 +100,6 @@ class SettingsStore(context: Context) {
         val KEY_WEBDAV_SERVER = stringPreferencesKey("webdav_server")
         val KEY_WEBDAV_ACCOUNT = stringPreferencesKey("webdav_account")
         val KEY_WEBDAV_DIR = stringPreferencesKey("webdav_dir")
+        val KEY_FREQUENT_ADDRESSES = stringPreferencesKey("frequent_addresses")
     }
 }

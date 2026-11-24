@@ -14,6 +14,8 @@ data class RecordEntity(
     val time: String,
     val distance: Double,
     val note: String = "",
+    val routeStart: String = "",
+    val routeEnd: String = "",
     val createdAt: Long,
     val updatedAt: Long,
     val dirty: Boolean = true

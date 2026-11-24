@@ -2,6 +2,7 @@ package com.example.cyclingcheckin.data.remote
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -30,9 +31,22 @@ class WeatherService(
 
     /**
      * 获取指定经纬度的今明两天天气预报。
+     * 启动阶段网络可能尚未就绪，失败后自动重试。
      * 返回 null 表示网络失败 / 数据不全。
      */
     suspend fun fetchForecast(latitude: Double, longitude: Double): WeatherForecast? {
+        repeat(MAX_ATTEMPTS) { attempt ->
+            val result = fetchOnce(latitude, longitude)
+            if (result != null) return result
+            if (attempt < MAX_ATTEMPTS - 1) {
+                Log.w(TAG, "request failed, retry #${attempt + 1}")
+                delay(RETRY_DELAY_MS * (attempt + 1))
+            }
+        }
+        return null
+    }
+
+    private suspend fun fetchOnce(latitude: Double, longitude: Double): WeatherForecast? {
         val url = "$endpoint?latitude=$latitude&longitude=$longitude" +
             "&daily=weather_code,temperature_2m_max,temperature_2m_min" +
             "&timezone=auto&forecast_days=2"
@@ -67,6 +81,11 @@ class WeatherService(
                 tomorrow = daily.toEntry(1)
             )
         }.onFailure { Log.e(TAG, "build forecast error: ${it.message}") }.getOrNull()
+    }
+
+    private companion object {
+        const val MAX_ATTEMPTS = 3
+        const val RETRY_DELAY_MS = 800L
     }
 }
 

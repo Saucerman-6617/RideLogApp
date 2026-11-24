@@ -32,12 +32,14 @@ object FileUtils {
     }
 
     fun csvOf(records: List<Record>): String {
-        val header = "date,time,distance,note"
+        val header = "date,time,distance,routeStart,routeEnd,note"
         val rows = records.map { record ->
             listOf(
                 TimeUtils.formatDate(record.date),
                 TimeUtils.formatTime(record.time),
                 String.format(Locale.US, "%.1f", record.distance),
+                escapeCsv(record.routeStart),
+                escapeCsv(record.routeEnd),
                 escapeCsv(record.note)
             ).joinToString(",")
         }

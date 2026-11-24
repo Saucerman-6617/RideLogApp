@@ -57,7 +57,8 @@ class BackupService(
         runCatching {
             val config = currentConfig() ?: throw WebDavException(WebDavError.NOT_CONFIGURED)
             val records = repository.getAll()
-            val json = BackupCodec.encode(records, Build.MODEL)
+            val addresses = settingsStore.settings.first().frequentAddresses
+            val json = BackupCodec.encode(records, Build.MODEL, addresses)
             val fileName = FileUtils.backupFileName()
             client.upload(config, fileName, json).getOrThrow()
             repository.markAllClean()
@@ -99,13 +100,27 @@ class BackupService(
         runCatching {
             val config = currentConfig() ?: throw WebDavException(WebDavError.NOT_CONFIGURED)
             val text = client.download(config, file).getOrThrow()
-            val records = try {
-                BackupCodec.decode(text)
+            val payload = try {
+                BackupCodec.decodePayload(text)
             } catch (e: IllegalArgumentException) {
                 throw WebDavException(WebDavError.INVALID_DATA, cause = e)
             }
             val snapshot = FileUtils.writeSnapshot(context, repository.getAll())
-            val result = repository.importRecords(records, overwrite = policy == ConflictPolicy.OVERWRITE)
+            val result = repository.importRecords(
+                payload.records,
+                overwrite = policy == ConflictPolicy.OVERWRITE
+            )
+            // 常用地址随记录一起恢复；旧备份没有地址数据时不做改动
+            if (payload.frequentAddresses.isNotEmpty()) {
+                val local = settingsStore.settings.first().frequentAddresses
+                val restored = if (policy == ConflictPolicy.OVERWRITE) {
+                    payload.frequentAddresses
+                } else {
+                    val localIds = local.map { it.id }.toSet()
+                    local + payload.frequentAddresses.filterNot { it.id in localIds }
+                }
+                settingsStore.saveFrequentAddresses(restored)
+            }
             RestoreSummary(
                 imported = result.imported,
                 skipped = result.skipped,

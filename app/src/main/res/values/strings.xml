@@ -82,6 +82,16 @@
     <string name="record_title_edit">编辑记录</string>
     <string name="record_label_date_time">日期与时间</string>
     <string name="record_label_date_time_hint">默认当前日期时间</string>
+    <string name="record_label_route">骑行路线</string>
+    <string name="record_route_start_hint">起点</string>
+    <string name="record_route_end_hint">终点</string>
+    <string name="frequent_address_title_add">新增常用地址</string>
+    <string name="frequent_address_title_edit">编辑常用地址</string>
+    <string name="frequent_address_name">地址名称</string>
+    <string name="frequent_address_hint">如：家</string>
+    <string name="frequent_address_save">保存地址</string>
+    <string name="frequent_address_delete">删除地址</string>
+    <string name="cd_add_frequent_address">新增常用地址</string>
     <string name="record_label_distance">骑行距离</string>
     <string name="record_distance_hint">上下滑动选择骑行距离，精确到 0.1 公里</string>
     <string name="record_label_note">备注</string>

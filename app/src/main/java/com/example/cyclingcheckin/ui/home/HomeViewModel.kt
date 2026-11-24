@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import android.util.Log
 import com.example.cyclingcheckin.AppContainer
 import com.example.cyclingcheckin.data.local.LocationCache
+import com.example.cyclingcheckin.data.local.WeatherCache
 import com.example.cyclingcheckin.data.prefs.SettingsStore
 import com.example.cyclingcheckin.data.remote.BackupService
 import com.example.cyclingcheckin.data.remote.LocationService
@@ -15,6 +16,7 @@ import com.example.cyclingcheckin.data.remote.WeatherService
 import com.example.cyclingcheckin.data.repo.RecordRepository
 import com.example.cyclingcheckin.domain.model.CalendarMarkStyle
 import com.example.cyclingcheckin.domain.model.DayStat
+import com.example.cyclingcheckin.domain.model.FrequentAddress
 import com.example.cyclingcheckin.domain.model.Record
 import com.example.cyclingcheckin.domain.model.Validators
 import com.example.cyclingcheckin.util.TimeUtils
@@ -40,6 +42,7 @@ data class HomeUiState(
     val records: List<Record> = emptyList(),
     val monthStats: Map<LocalDate, DayStat> = emptyMap(),
     val markStyle: CalendarMarkStyle = CalendarMarkStyle.DOT,
+    val frequentAddresses: List<FrequentAddress> = emptyList(),
     val loading: Boolean = true
 ) {
     val selectedCount: Int get() = records.size
@@ -68,7 +71,8 @@ class HomeViewModel(
     private val backupService: BackupService,
     private val weatherService: WeatherService,
     private val locationService: LocationService,
-    private val locationCache: LocationCache
+    private val locationCache: LocationCache,
+    private val weatherCache: WeatherCache
 ) : ViewModel() {
 
     private val selectedDate = MutableStateFlow(LocalDate.now())
@@ -86,6 +90,8 @@ class HomeViewModel(
     val location: StateFlow<HomeLocation> = _location
 
     init {
+        // 先用上次成功缓存的天气填充，避免启动时长时间显示占位
+        _weather.value = weatherCache.loadValid()
         refreshWeather()
     }
 
@@ -106,7 +112,11 @@ class HomeViewModel(
                 .onFailure { Log.e("HomeVM", "weather fetch exception", it) }
                 .getOrNull()
             Log.d("HomeVM", "forecast=$forecast")
-            _weather.value = forecast
+            // 请求失败时保留已有（缓存）天气，避免回退到占位
+            if (forecast != null) {
+                _weather.value = forecast
+                weatherCache.save(forecast)
+            }
 
             // 名称解析：真实定位→解析并写入缓存；使用缓存→沿用缓存名称，缺失时补解析
             val name = if (snapshot.isFallback) {
@@ -147,6 +157,7 @@ class HomeViewModel(
             records = records,
             monthStats = stats,
             markStyle = settings.calendarMarkStyle,
+            frequentAddresses = settings.frequentAddresses,
             loading = false
         )
     }.stateIn(
@@ -182,11 +193,13 @@ class HomeViewModel(
         date: LocalDate,
         time: LocalTime,
         distance: Double,
-        note: String
+        note: String,
+        routeStart: String,
+        routeEnd: String
     ) {
         viewModelScope.launch {
             if (existing == null) {
-                repository.create(date, time, distance, note)
+                repository.create(date, time, distance, note, routeStart, routeEnd)
                     .onSuccess {
                         events.send(HomeEvent.Added(it))
                         triggerAutoBackup()
@@ -197,12 +210,41 @@ class HomeViewModel(
                     date = date,
                     time = time,
                     distance = Validators.roundDistance(distance),
-                    note = note
+                    note = note,
+                    routeStart = routeStart.trim(),
+                    routeEnd = routeEnd.trim()
                 )
                 repository.update(updated)
                     .onSuccess { events.send(HomeEvent.Updated(updated)) }
                     .onFailure { events.send(HomeEvent.Failed("保存失败，请重试")) }
             }
+        }
+    }
+
+    /** 新增或更新常用地址（id 已存在则覆盖）。 */
+    fun saveFrequentAddress(address: FrequentAddress) {
+        viewModelScope.launch {
+            val current = settingsStore.settings.first().frequentAddresses
+            val target = if (address.id == 0L) {
+                address.copy(id = System.currentTimeMillis())
+            } else {
+                address
+            }
+            val updated = if (current.any { it.id == target.id }) {
+                current.map { if (it.id == target.id) target else it }
+            } else {
+                current + target
+            }
+            settingsStore.saveFrequentAddresses(updated)
+            triggerAutoBackup()
+        }
+    }
+
+    fun deleteFrequentAddress(address: FrequentAddress) {
+        viewModelScope.launch {
+            val current = settingsStore.settings.first().frequentAddresses
+            settingsStore.saveFrequentAddresses(current.filterNot { it.id == address.id })
+            triggerAutoBackup()
         }
     }
 
@@ -254,7 +296,8 @@ class HomeViewModel(
                     container.backupService,
                     container.weatherService,
                     container.locationService,
-                    container.locationCache
+                    container.locationCache,
+                    container.weatherCache
                 )
             }
         }

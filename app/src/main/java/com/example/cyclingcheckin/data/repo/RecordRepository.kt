@@ -17,7 +17,14 @@ interface RecordRepository {
     fun observeRange(start: LocalDate, end: LocalDate): Flow<List<DayStat>>
     fun observeAll(): Flow<List<Record>>
     suspend fun getAll(): List<Record>
-    suspend fun create(date: LocalDate, time: LocalTime, distance: Double, note: String): Result<Record>
+    suspend fun create(
+        date: LocalDate,
+        time: LocalTime,
+        distance: Double,
+        note: String,
+        routeStart: String = "",
+        routeEnd: String = ""
+    ): Result<Record>
     suspend fun update(record: Record): Result<Unit>
     suspend fun delete(record: Record): Result<Unit>
     suspend fun restore(record: Record): Result<Unit>
@@ -55,7 +62,9 @@ class RecordRepositoryImpl(
         date: LocalDate,
         time: LocalTime,
         distance: Double,
-        note: String
+        note: String,
+        routeStart: String,
+        routeEnd: String
     ): Result<Record> = runCatching {
         val now = System.currentTimeMillis()
         val entity = RecordEntity(
@@ -63,6 +72,8 @@ class RecordRepositoryImpl(
             time = TimeUtils.formatTime(time),
             distance = Validators.roundDistance(distance),
             note = note.trim().take(Validators.MAX_NOTE_LENGTH),
+            routeStart = routeStart.trim(),
+            routeEnd = routeEnd.trim(),
             createdAt = now,
             updatedAt = now,
             dirty = true
@@ -79,6 +90,8 @@ class RecordRepositoryImpl(
                 time = TimeUtils.formatTime(record.time),
                 distance = Validators.roundDistance(record.distance),
                 note = record.note.trim().take(Validators.MAX_NOTE_LENGTH),
+                routeStart = record.routeStart.trim(),
+                routeEnd = record.routeEnd.trim(),
                 createdAt = record.createdAt,
                 updatedAt = System.currentTimeMillis(),
                 dirty = true
@@ -142,6 +155,8 @@ private fun RecordEntity.toDomain(): Record = Record(
     time = TimeUtils.parseTime(time) ?: LocalTime.MIDNIGHT,
     distance = distance,
     note = note,
+    routeStart = routeStart,
+    routeEnd = routeEnd,
     createdAt = createdAt,
     updatedAt = updatedAt,
     dirty = dirty
@@ -153,6 +168,8 @@ private fun Record.toEntity(): RecordEntity = RecordEntity(
     time = TimeUtils.formatTime(time),
     distance = distance,
     note = note,
+    routeStart = routeStart,
+    routeEnd = routeEnd,
     createdAt = createdAt,
     updatedAt = updatedAt,
     dirty = dirty
