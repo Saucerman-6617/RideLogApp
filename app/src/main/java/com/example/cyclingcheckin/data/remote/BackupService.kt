@@ -74,19 +74,21 @@ class BackupService(
     }
 
     /**
-     * 列出远端备份，并读取每个文件的记录条数（限制 2MB 以内，失败时条数为 null）。
+     * 列出远端备份（按修改时间倒序），并读取每个文件的记录条数（限制 2MB 以内，失败时条数为 null）。
      */
     suspend fun listBackups(): Result<List<RemoteBackupFile>> = withContext(Dispatchers.IO) {
         runCatching {
             val config = currentConfig() ?: throw WebDavException(WebDavError.NOT_CONFIGURED)
-            client.listBackups(config).getOrThrow().map { file ->
-                if (file.sizeBytes in 1..MAX_COUNT_FILE_SIZE) {
-                    val text = client.download(config, file).getOrNull()
-                    file.withRecordCount(text?.let { BackupCodec.decodeCount(it) })
-                } else {
-                    file
+            client.listBackups(config).getOrThrow()
+                .map { file ->
+                    if (file.sizeBytes in 1..MAX_COUNT_FILE_SIZE) {
+                        val text = client.download(config, file).getOrNull()
+                        file.withRecordCount(text?.let { BackupCodec.decodeCount(it) })
+                    } else {
+                        file
+                    }
                 }
-            }
+                .sortedByDescending { it.lastModified }
         }.toWebDavResult()
     }
 
