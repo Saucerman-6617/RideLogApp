@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.LooksOne
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
@@ -240,15 +239,6 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_mark),
                     subtitle = markLabel(uiState.settings.calendarMarkStyle),
                     onClick = { showMarkDialog = true }
-                )
-            }
-            item {
-                SettingRow(
-                    icon = { Icon(Icons.Filled.LooksOne, null, tint = MaterialTheme.colorScheme.primary) },
-                    title = stringResource(R.string.settings_decimals),
-                    subtitle = stringResource(R.string.settings_decimals_value),
-                    enabled = false,
-                    onClick = {}
                 )
             }
             item {
