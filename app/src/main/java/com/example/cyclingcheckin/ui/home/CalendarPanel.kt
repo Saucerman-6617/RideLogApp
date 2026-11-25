@@ -1,7 +1,6 @@
 package com.example.cyclingcheckin.ui.home
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -222,28 +221,16 @@ private fun DayCell(
                         maxLines = 1
                     )
                 } else {
-                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        DotMarker(selected)
-                        if (stat.count >= 2) DotMarker(selected)
-                    }
+                    Text(
+                        text = stringResource(R.string.calendar_count, stat.count),
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 9.sp),
+                        color = if (selected) primary else RideLogTheme.colors.accent,
+                        maxLines = 1
+                    )
                 }
             }
         }
     }
 }
 
-@Composable
-private fun DotMarker(onSelected: Boolean) {
-    Box(
-        modifier = Modifier
-            .size(4.dp)
-            .background(
-                color = if (onSelected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    RideLogTheme.colors.accent
-                },
-                shape = CircleShape
-            )
-    )
-}
+

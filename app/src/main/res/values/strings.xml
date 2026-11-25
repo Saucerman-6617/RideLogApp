@@ -189,8 +189,9 @@
     <string name="settings_theme_light">浅色</string>
     <string name="settings_theme_dark">深色</string>
     <string name="settings_mark">日历标记样式</string>
-    <string name="settings_mark_dot">圆点</string>
+    <string name="settings_mark_dot">骑行次数</string>
     <string name="settings_mark_distance">里程数字</string>
+    <string name="calendar_count">%1$d次</string>
     <string name="settings_decimals">距离小数位</string>
     <string name="settings_decimals_value">1 位（固定）</string>
     <string name="settings_language">语言</string>
