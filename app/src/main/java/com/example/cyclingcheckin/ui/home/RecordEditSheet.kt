@@ -30,6 +30,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldDecorator
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.maxLength
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -136,11 +142,11 @@ fun RecordEditSheet(
     var note by rememberSaveable(existing?.id) {
         mutableStateOf(existing?.note.orEmpty())
     }
-    var routeStart by rememberSaveable(existing?.id) {
-        mutableStateOf(existing?.routeStart.orEmpty())
+    val routeStart = rememberSaveable(existing?.id, saver = TextFieldState.Saver) {
+        TextFieldState(existing?.routeStart.orEmpty())
     }
-    var routeEnd by rememberSaveable(existing?.id) {
-        mutableStateOf(existing?.routeEnd.orEmpty())
+    val routeEnd = rememberSaveable(existing?.id, saver = TextFieldState.Saver) {
+        TextFieldState(existing?.routeEnd.orEmpty())
     }
     // 常用地址点击后填入最近聚焦的一侧输入框，默认起点
     var activeRouteTarget by rememberSaveable(existing?.id) {
@@ -191,7 +197,7 @@ fun RecordEditSheet(
                 TextButton(
                     onClick = {
                         val distance = validation.distance ?: return@TextButton
-                        onSave(date, time, distance, note, routeStart, routeEnd)
+                        onSave(date, time, distance, note, routeStart.text.toString(), routeEnd.text.toString())
                     },
                     enabled = validation.isValid
                 ) {
@@ -295,8 +301,7 @@ fun RecordEditSheet(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         RouteField(
-                            value = routeStart,
-                            onValueChange = { routeStart = it },
+                            state = routeStart,
                             placeholder = stringResource(R.string.record_route_start_hint),
                             icon = Icons.Filled.LocationOn,
                             iconTint = MaterialTheme.colorScheme.primary,
@@ -310,8 +315,7 @@ fun RecordEditSheet(
                             modifier = Modifier.size(20.dp)
                         )
                         RouteField(
-                            value = routeEnd,
-                            onValueChange = { routeEnd = it },
+                            state = routeEnd,
                             placeholder = stringResource(R.string.record_route_end_hint),
                             icon = Icons.Filled.Flag,
                             iconTint = RideLogTheme.colors.danger,
@@ -324,8 +328,10 @@ fun RecordEditSheet(
                         addresses = frequentAddresses,
                         onPick = { address ->
                             when (activeRouteTarget) {
-                                RouteTarget.START -> routeStart = address.name
-                                RouteTarget.END -> routeEnd = address.name
+                                RouteTarget.START ->
+                                    routeStart.setTextAndPlaceCursorAtEnd(address.name)
+                                RouteTarget.END ->
+                                    routeEnd.setTextAndPlaceCursorAtEnd(address.name)
                             }
                         },
                         onEdit = { address ->
@@ -684,8 +690,7 @@ private fun LazyListState.centerItemIndex(): Int {
 /** 骑行路线输入框：图标 + 单行文本，样式与日期时间选择框一致。 */
 @Composable
 private fun RouteField(
-    value: String,
-    onValueChange: (String) -> Unit,
+    state: TextFieldState,
     placeholder: String,
     icon: ImageVector,
     iconTint: Color,
@@ -698,42 +703,51 @@ private fun RouteField(
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(18.dp)
-            )
-            Box(modifier = Modifier.weight(1f)) {
-                if (value.isEmpty()) {
-                    Text(
-                        text = placeholder,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = RideLogTheme.colors.secondaryText,
-                        maxLines = 1
-                    )
-                }
-                BasicTextField(
-                    value = value,
-                    onValueChange = {
-                        if (it.length <= MAX_ROUTE_LENGTH) onValueChange(it)
-                    },
+        // 使用 TextFieldState 版本：内容超出宽度横向滚动时，移动光标（包括拖动光标圆点）
+        // 会自动滚动文本，旧的 BasicTextField 只在文字变化时才滚动。
+        BasicTextField(
+            state = state,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { if (it.isFocused) onFocused() },
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurface
+            ),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = remember {
+                InputTransformation.maxLength(MAX_ROUTE_LENGTH)
+            },
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            // 图标和占位符放在 decorator 里，使整个输入框（包括左右两端留白）都属于
+            // 文本框的点击热区，点击首尾也能把光标定位到开头或结尾。
+            decorator = TextFieldDecorator { innerTextField ->
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .onFocusChanged { if (it.isFocused) onFocused() },
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
-                    singleLine = true,
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary)
-                )
+                        .padding(horizontal = 12.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (state.text.isEmpty()) {
+                            Text(
+                                text = placeholder,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = RideLogTheme.colors.secondaryText,
+                                maxLines = 1
+                            )
+                        }
+                        innerTextField()
+                    }
+                }
             }
-        }
+        )
     }
 }
 
