@@ -83,7 +83,7 @@ com.example.cyclingcheckin/
 
 ## 📥 下载
 
-前往 [Releases](https://github.com/Saucerman-6617/RideLogApp/releases) 下载最新 APK（当前版本 **v1.1.1**），Android 8.0+ 可直接安装。
+前往 [Releases](https://github.com/Saucerman-6617/RideLogApp/releases) 下载最新 APK（当前版本 **v1.1.2**），Android 8.0+ 可直接安装。
 
 ## 🚀 快速开始
 
